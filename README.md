@@ -70,6 +70,3 @@ pnpm lint
 pnpm build
 ```
 
-## Note on docs drift
-
-The private planning docs were useful to start, but the implementation has already drifted a bit from them. That is normal for the first pass. We should do a deliberate docs sync once Milestone 0 lands cleanly, rather than pretending the old wording is still exact.
