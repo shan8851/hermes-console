@@ -61,6 +61,32 @@ Optional overrides:
 
 Copy `.env.example` to `.env.local` if you want to set either of them.
 
+## Current discovery assumptions
+
+The first inventory pass is intentionally boring and explicit.
+
+Resolved roots:
+- Hermes root defaults to `~/.hermes`
+- workspace root defaults to your home directory
+- either path can be overridden via env
+
+Discovered agent roots:
+- default/root agent: `<hermesRoot>`
+- profile agents: `<hermesRoot>/profiles/*`
+
+Current availability checks look for:
+- `config.yaml`
+- `memories/`
+- `sessions/`
+- `cron/`
+- `skills/`
+- `state.db`
+
+Current installation states:
+- `missing` — resolved Hermes root does not exist
+- `partial` — Hermes root exists, but no discovered agent has meaningful runtime surfaces yet
+- `ready` — at least one discovered agent looks usable
+
 ## Scripts
 
 ```bash

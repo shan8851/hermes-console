@@ -70,9 +70,13 @@ export function resolveInventoryPathConfig(
   };
 }
 
+function resolveDefaultHomeDir() {
+  return process.env.HOME ?? /* turbopackIgnore: true */ process.cwd();
+}
+
 export function resolveInventoryPathConfigFromEnv(
   env: NodeJS.ProcessEnv = process.env,
-  homeDir = process.env.HOME ?? process.cwd(),
+  homeDir = resolveDefaultHomeDir(),
 ) {
   return resolveInventoryPathConfig({
     homeDir,
