@@ -26,6 +26,50 @@ Hermes Console is a visibility-first interface for understanding what your Herme
 
 Hermes Console makes your Hermes setup legible: sessions, cron jobs, skills, memory, config, and key files in one calm place.
 
-## Status
+## Current status
 
-Bootstrap in progress. The repo currently contains the initial Next.js app scaffold, base styling, and first test wiring for Milestone 0A.
+Milestone 0 bootstrap is in progress.
+
+What exists right now:
+- Next.js app scaffold with App Router
+- Tailwind, TypeScript, ESLint, and Vitest wiring
+- app shell with sidebar + top bar
+- placeholder routes for Overview, Sessions, Cron, Skills, Memory, Setup, and Files
+
+Still to come before Milestone 0 feels done:
+- bootstrap cleanup and README polish
+- first real config/inventory plumbing
+- a docs sync pass after the implementation settles
+
+## Local setup
+
+```bash
+pnpm install
+cp .env.example .env.local
+pnpm dev
+```
+
+Open `http://localhost:3000`.
+
+## Environment
+
+Hermes Console is designed to work against a normal Hermes install under `~/.hermes`.
+
+Optional overrides:
+- `HERMES_CONSOLE_HERMES_DIR` — alternate Hermes state root
+- `HERMES_CONSOLE_WORKSPACE_DIR` — alternate workspace/context root for discovering high-signal project files
+
+Copy `.env.example` to `.env.local` if you want to set either of them.
+
+## Scripts
+
+```bash
+pnpm dev
+pnpm test
+pnpm lint
+pnpm build
+```
+
+## Note on docs drift
+
+The private planning docs were useful to start, but the implementation has already drifted a bit from them. That is normal for the first pass. We should do a deliberate docs sync once Milestone 0 lands cleanly, rather than pretending the old wording is still exact.
