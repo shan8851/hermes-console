@@ -1,7 +1,7 @@
 import { MemoryFilePanel } from "@/features/memory/components/memory-file-panel";
 import { MemoryPressureBadge } from "@/features/memory/components/memory-pressure-badge";
+import { MemorySummaryGrid } from "@/features/memory/components/memory-summary-grid";
 import { readHermesMemory } from "@/features/memory/read-memory";
-import { InventorySummaryGrid } from "@/features/inventory/components/inventory-summary-grid";
 import { createSectionMetadata } from "@/lib/create-section-metadata";
 
 export const metadata = createSectionMetadata(
@@ -9,33 +9,64 @@ export const metadata = createSectionMetadata(
   "USER and MEMORY surfaces with usage indicators.",
 );
 
+function getOverallPressureLevel(memory: ReturnType<typeof readHermesMemory>) {
+  if (
+    memory.files.memory.pressureLevel === "at_limit" ||
+    memory.files.user.pressureLevel === "at_limit"
+  ) {
+    return "at_limit";
+  }
+
+  if (
+    memory.files.memory.pressureLevel === "near_limit" ||
+    memory.files.user.pressureLevel === "near_limit"
+  ) {
+    return "near_limit";
+  }
+
+  if (
+    memory.files.memory.pressureLevel === "approaching_limit" ||
+    memory.files.user.pressureLevel === "approaching_limit"
+  ) {
+    return "approaching_limit";
+  }
+
+  return "healthy";
+}
+
 export default function MemoryPage() {
   const memory = readHermesMemory();
+  const overallPressure = getOverallPressureLevel(memory);
 
   const summaryItems = [
     {
-      label: "memory status",
+      label: "status",
       value:
+        memory.status === "ready" ? "✓ OK" : memory.status === "partial" ? "~ Partial" : "Missing",
+      detail:
         memory.status === "ready"
           ? "Both memory files were found and parsed."
           : memory.status === "partial"
-            ? "One memory surface exists, but the other is missing."
+            ? "One surface exists, but the other is missing."
             : "No memory files were found under the resolved Hermes root.",
-      tone: "muted" as const,
-    },
-    {
-      label: "memory usage",
-      value: `${memory.files.memory.charCount}/${memory.files.memory.limit} · ${memory.files.memory.usagePercentage}%`,
       tone: "default" as const,
     },
     {
-      label: "user usage",
-      value: `${memory.files.user.charCount}/${memory.files.user.limit} · ${memory.files.user.usagePercentage}%`,
+      label: "memory",
+      value: `${memory.files.memory.usagePercentage}%`,
+      detail: `${memory.files.memory.charCount}/${memory.files.memory.limit} chars used`,
       tone: "default" as const,
     },
     {
-      label: "resolved root",
-      value: memory.rootPath,
+      label: "user",
+      value: `${memory.files.user.usagePercentage}%`,
+      detail: `${memory.files.user.charCount}/${memory.files.user.limit} chars used`,
+      tone: "default" as const,
+    },
+    {
+      label: "saved blocks",
+      value: String(memory.files.memory.entries.length + memory.files.user.entries.length),
+      detail: `${memory.files.memory.entries.length} durable + ${memory.files.user.entries.length} user blocks`,
       tone: "default" as const,
     },
   ];
@@ -47,48 +78,34 @@ export default function MemoryPage() {
           <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">
             Memory
           </p>
-          <MemoryPressureBadge
-            level={
-              memory.files.memory.pressureLevel === "at_limit" ||
-              memory.files.user.pressureLevel === "at_limit"
-                ? "at_limit"
-                : memory.files.memory.pressureLevel === "near_limit" ||
-                    memory.files.user.pressureLevel === "near_limit"
-                  ? "near_limit"
-                  : memory.files.memory.pressureLevel === "approaching_limit" ||
-                      memory.files.user.pressureLevel === "approaching_limit"
-                    ? "approaching_limit"
-                    : "healthy"
-            }
-          />
+          <MemoryPressureBadge level={overallPressure} />
         </div>
         <h2 className="mt-3 font-[family-name:var(--font-bricolage)] text-xl font-semibold tracking-tight text-fg-strong sm:text-2xl">
-          See what is shaping Hermes before the context gets weird
+          See what Hermes has actually saved from working with you
         </h2>
         <p className="mt-3 text-sm leading-7 text-fg-muted">
-          This page now reads the real <span className="font-mono text-xs text-fg">MEMORY.md</span>{" "}
-          and <span className="font-mono text-xs text-fg">USER.md</span> files, resolves their
-          configured limits from <span className="font-mono text-xs text-fg">config.yaml</span>,
-          and flags pressure before the memory budget quietly turns to mush.
+          Hermes keeps durable memory in real markdown files rather than a hidden black box. This
+          page shows the current files, their pressure against configured limits, and the saved
+          blocks that have been captured over time.
         </p>
       </section>
 
-      <InventorySummaryGrid items={summaryItems} />
+      <MemorySummaryGrid items={summaryItems} />
 
       <section className="rounded-lg border border-border bg-surface/70 p-4">
         <h3 className="font-[family-name:var(--font-bricolage)] text-base font-semibold text-fg-strong">
-          Limit resolution
+          File model
         </h3>
         <ul className="mt-3 space-y-2 text-sm leading-6 text-fg-muted">
           <li>
-            - MEMORY limit: {memory.limits.memory.value} ({memory.limits.memory.source})
+            - <span className="font-mono text-xs text-fg">MEMORY.md</span> and <span className="font-mono text-xs text-fg">USER.md</span> are the real source files.
           </li>
           <li>
-            - USER limit: {memory.limits.user.value} ({memory.limits.user.source})
+            - We parse <span className="font-mono text-xs text-fg">§</span>-separated sections into
+            saved blocks so the file stays scannable instead of becoming one giant wall.
           </li>
           <li>
-            - Current parser treats <span className="font-mono text-xs text-fg">§</span>-separated
-            blocks as individual entries and preserves the memory preamble separately.
+            - Limits currently resolve from <span className="font-mono text-xs text-fg">config.yaml</span> when available, otherwise they fall back to defaults.
           </li>
         </ul>
       </section>

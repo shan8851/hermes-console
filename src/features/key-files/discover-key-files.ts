@@ -10,6 +10,7 @@ export type KeyFileStat = {
 export type KeyFilesFileSystem = {
   pathExists(targetPath: string): boolean;
   listDirectories(targetPath: string): string[];
+  listFiles(targetPath: string): string[];
   statFile(targetPath: string): KeyFileStat | null;
   readTextFile(targetPath: string): string | null;
 };
@@ -30,14 +31,7 @@ const HERMES_ROOT_CANDIDATES: FileCandidate[] = [
   { relativePath: "memories/USER.md", name: "USER.md", kind: "memory" },
 ];
 
-const WORKSPACE_FILE_NAMES: Array<Pick<FileCandidate, "name" | "kind">> = [
-  { name: "AGENTS.md", kind: "instruction" },
-  { name: "CLAUDE.md", kind: "instruction" },
-  { name: ".hermes.md", kind: "instruction" },
-  { name: ".cursorrules", kind: "instruction" },
-  { name: "SOUL.md", kind: "identity" },
-];
-
+const WORKSPACE_EXACT_FILE_NAMES = new Set([".cursorrules"]);
 const IGNORED_DIRECTORY_NAMES = new Set([
   ".git",
   "node_modules",
@@ -144,6 +138,18 @@ function collectWorkspaceDirectories({
   return directories;
 }
 
+function classifyWorkspaceFile(fileName: string): KeyFileKind | null {
+  if (fileName === "SOUL.md") {
+    return "identity";
+  }
+
+  if (fileName.endsWith(".md") || WORKSPACE_EXACT_FILE_NAMES.has(fileName)) {
+    return "instruction";
+  }
+
+  return null;
+}
+
 function discoverWorkspaceFiles({
   workspaceRoot,
   fileSystem,
@@ -155,8 +161,14 @@ function discoverWorkspaceFiles({
   const files: KeyFileSummary[] = [];
 
   for (const directoryPath of directories) {
-    for (const candidate of WORKSPACE_FILE_NAMES) {
-      const filePath = path.join(directoryPath, candidate.name);
+    for (const fileName of fileSystem.listFiles(directoryPath)) {
+      const kind = classifyWorkspaceFile(fileName);
+
+      if (!kind) {
+        continue;
+      }
+
+      const filePath = path.join(directoryPath, fileName);
       const stat = fileSystem.statFile(filePath);
 
       if (!stat) {
@@ -168,8 +180,8 @@ function discoverWorkspaceFiles({
           scope: "workspace_root",
           rootPath: workspaceRoot,
           filePath,
-          name: candidate.name,
-          kind: candidate.kind,
+          name: fileName,
+          kind,
           stat,
         }),
       );

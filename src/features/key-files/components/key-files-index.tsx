@@ -53,11 +53,17 @@ export function KeyFilesIndex({
         {
           id: "workspace",
           title: "Workspace root",
-          description: "High-signal instruction files from the bounded workspace scan.",
+          description: "Bounded markdown and instruction files from the configured workspace scope.",
           files: grouped.workspace,
         },
       ].map((group) => (
-        <section key={group.id} className="rounded-lg border border-border bg-surface/70 p-4">
+        <section
+          key={group.id}
+          className={[
+            "rounded-lg border border-border bg-surface/70 p-4",
+            group.id === "workspace" ? "xl:max-h-[40rem] xl:overflow-auto" : "",
+          ].join(" ")}
+        >
           <div className="mb-4">
             <h3 className="font-[family-name:var(--font-bricolage)] text-base font-semibold text-fg-strong">
               {group.title}

@@ -1,9 +1,9 @@
 import { KeyFilePreview } from "@/features/key-files/components/key-file-preview";
 import { KeyFilesIndex } from "@/features/key-files/components/key-files-index";
+import { KeyFilesSummaryGrid } from "@/features/key-files/components/key-files-summary-grid";
 import { readKeyFileContent } from "@/features/key-files/read-key-file-content";
 import { readKeyFiles } from "@/features/key-files/read-key-files";
 import { readHermesMemory } from "@/features/memory/read-memory";
-import { InventorySummaryGrid } from "@/features/inventory/components/inventory-summary-grid";
 import { createSectionMetadata } from "@/lib/create-section-metadata";
 
 export const metadata = createSectionMetadata(
@@ -25,22 +25,20 @@ export default async function FilesPage({
     {
       label: "files discovered",
       value: String(keyFiles.files.length),
+      detail: "High-signal files in the configured Hermes + workspace scopes.",
       tone: "default" as const,
     },
     {
-      label: "hermes-root files",
+      label: "hermes root",
       value: String(keyFiles.files.filter((file) => file.scope === "hermes_root").length),
+      detail: "Native Hermes files under the runtime root.",
       tone: "default" as const,
     },
     {
-      label: "workspace files",
+      label: "workspace root",
       value: String(keyFiles.files.filter((file) => file.scope === "workspace_root").length),
+      detail: "Markdown and instruction files from the bounded workspace scan.",
       tone: "default" as const,
-    },
-    {
-      label: "roots",
-      value: `${keyFiles.roots.hermesRoot} · ${keyFiles.roots.workspaceRoot}`,
-      tone: "muted" as const,
     },
   ];
 
@@ -56,13 +54,20 @@ export default async function FilesPage({
           Show the files that shape Hermes, not the whole damned filesystem
         </h2>
         <p className="mt-3 text-sm leading-7 text-fg-muted">
-          This surface stays deliberately narrow: Hermes-root identity files, memory files,
-          and high-signal instruction files from a bounded workspace scan. No fake file
-          manager nonsense.
+          This stays deliberately narrow: explicit Hermes-root files plus markdown and instruction
+          files from the configured Hermes workspace scope. No fake file manager nonsense.
         </p>
+        <div className="mt-4 flex flex-wrap gap-2 text-xs text-fg-muted">
+          <span className="rounded-full border border-border/80 bg-bg/40 px-3 py-1 font-mono">
+            workspace {keyFiles.roots.workspaceRoot}
+          </span>
+          <span className="rounded-full border border-border/80 bg-bg/40 px-3 py-1 font-mono">
+            hermes {keyFiles.roots.hermesRoot}
+          </span>
+        </div>
       </section>
 
-      <InventorySummaryGrid items={summaryItems} />
+      <KeyFilesSummaryGrid items={summaryItems} />
 
       <section className="rounded-lg border border-border bg-surface/70 p-4">
         <h3 className="font-[family-name:var(--font-bricolage)] text-base font-semibold text-fg-strong">
@@ -70,12 +75,12 @@ export default async function FilesPage({
         </h3>
         <ul className="mt-3 space-y-2 text-sm leading-6 text-fg-muted">
           <li>- Hermes-root discovery is explicit and allowlisted.</li>
-          <li>- Workspace discovery is bounded to the workspace root plus two directory levels.</li>
+          <li>- Workspace discovery now includes bounded markdown files plus instruction dotfiles.</li>
           <li>- Memory pressure badges are reused here for <span className="font-mono text-xs text-fg">MEMORY.md</span> and <span className="font-mono text-xs text-fg">USER.md</span>.</li>
         </ul>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.25fr)]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.38fr)]">
         <KeyFilesIndex files={keyFiles.files} selectedFileId={selected?.file.id ?? null} memory={memory} />
         <KeyFilePreview file={selected?.file ?? null} content={selected?.content ?? null} memory={memory} />
       </div>

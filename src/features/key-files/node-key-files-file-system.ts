@@ -17,6 +17,17 @@ export const nodeKeyFilesFileSystem: KeyFilesFileSystem = {
       .map((entry) => entry.name)
       .sort((left, right) => left.localeCompare(right));
   },
+  listFiles(targetPath) {
+    if (!fs.existsSync(targetPath)) {
+      return [];
+    }
+
+    return fs
+      .readdirSync(targetPath, { withFileTypes: true })
+      .filter((entry) => entry.isFile())
+      .map((entry) => entry.name)
+      .sort((left, right) => left.localeCompare(right));
+  },
   statFile(targetPath) {
     if (!fs.existsSync(targetPath)) {
       return null;

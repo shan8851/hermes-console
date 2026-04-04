@@ -1,3 +1,5 @@
+import path from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { discoverKeyFiles, type KeyFilesFileSystem } from "@/features/key-files/discover-key-files";
@@ -16,6 +18,12 @@ function createFileSystem({
     listDirectories(targetPath) {
       return directories[targetPath] ?? [];
     },
+    listFiles(targetPath) {
+      return Object.keys(files)
+        .filter((filePath) => path.dirname(filePath) === targetPath)
+        .map((filePath) => path.basename(filePath))
+        .sort((left, right) => left.localeCompare(right));
+    },
     statFile(targetPath) {
       if (!(targetPath in files)) {
         return null;
@@ -33,41 +41,41 @@ function createFileSystem({
 }
 
 describe("discoverKeyFiles", () => {
-  it("discovers explicit Hermes-root files and bounded workspace files", () => {
+  it("discovers explicit Hermes-root files and bounded workspace markdown files", () => {
     const result = discoverKeyFiles({
       hermesRoot: "/home/shan/.hermes",
-      workspaceRoot: "/home/shan",
+      workspaceRoot: "/home/shan/.hermes-workspaces",
       fileSystem: createFileSystem({
         files: {
           "/home/shan/.hermes/SOUL.md": {},
           "/home/shan/.hermes/memories/MEMORY.md": {},
           "/home/shan/.hermes/memories/USER.md": {},
-          "/home/shan/giles/hermes-console/AGENTS.md": {},
-          "/home/shan/shan/check-in-v2/CLAUDE.md": {},
+          "/home/shan/.hermes-workspaces/main/AGENTS.md": {},
+          "/home/shan/.hermes-workspaces/main/TOOLS.md": {},
+          "/home/shan/.hermes-workspaces/nigel/CURRENT.md": {},
+          "/home/shan/.hermes-workspaces/nigel/notes.txt": {},
         },
         directories: {
-          "/home/shan": ["giles", "shan", "go"],
           "/home/shan/.hermes": ["memories"],
           "/home/shan/.hermes/memories": [],
-          "/home/shan/giles": ["hermes-console"],
-          "/home/shan/giles/hermes-console": [],
-          "/home/shan/shan": ["check-in-v2"],
-          "/home/shan/shan/check-in-v2": [],
-          "/home/shan/go": ["pkg"],
+          "/home/shan/.hermes-workspaces": ["main", "nigel"],
+          "/home/shan/.hermes-workspaces/main": [],
+          "/home/shan/.hermes-workspaces/nigel": [],
         },
       }),
     });
 
     expect(result.files.map((file) => file.path)).toEqual([
+      "/home/shan/.hermes-workspaces/main/AGENTS.md",
+      "/home/shan/.hermes-workspaces/main/TOOLS.md",
+      "/home/shan/.hermes-workspaces/nigel/CURRENT.md",
       "/home/shan/.hermes/memories/MEMORY.md",
       "/home/shan/.hermes/memories/USER.md",
       "/home/shan/.hermes/SOUL.md",
-      "/home/shan/giles/hermes-console/AGENTS.md",
-      "/home/shan/shan/check-in-v2/CLAUDE.md",
     ]);
-    expect(result.files.find((file) => file.path.endsWith("AGENTS.md"))).toMatchObject({
+    expect(result.files.find((file) => file.path.endsWith("TOOLS.md"))).toMatchObject({
       scope: "workspace_root",
-      relativePath: "giles/hermes-console/AGENTS.md",
+      relativePath: "main/TOOLS.md",
       kind: "instruction",
     });
   });
@@ -75,21 +83,21 @@ describe("discoverKeyFiles", () => {
   it("dedupes repeated discoveries and ignores missing roots", () => {
     const result = discoverKeyFiles({
       hermesRoot: "/missing/.hermes",
-      workspaceRoot: "/home/shan",
+      workspaceRoot: "/home/shan/.hermes-workspaces",
       fileSystem: createFileSystem({
         files: {
-          "/home/shan/AGENTS.md": {},
+          "/home/shan/.hermes-workspaces/AGENTS.md": {},
         },
         directories: {
-          "/home/shan": [".", "project"],
-          "/home/shan/project": [],
+          "/home/shan/.hermes-workspaces": ["main"],
+          "/home/shan/.hermes-workspaces/main": [],
         },
       }),
     });
 
     expect(result.files).toHaveLength(1);
     expect(result.files[0]).toMatchObject({
-      path: "/home/shan/AGENTS.md",
+      path: "/home/shan/.hermes-workspaces/AGENTS.md",
       scope: "workspace_root",
     });
   });
@@ -97,22 +105,22 @@ describe("discoverKeyFiles", () => {
   it("keeps workspace discovery bounded to two directory levels", () => {
     const result = discoverKeyFiles({
       hermesRoot: "/home/shan/.hermes",
-      workspaceRoot: "/home/shan",
+      workspaceRoot: "/home/shan/.hermes-workspaces",
       fileSystem: createFileSystem({
         files: {
-          "/home/shan/giles/nested/deeper/AGENTS.md": {},
-          "/home/shan/giles/nested/AGENTS.md": {},
+          "/home/shan/.hermes-workspaces/main/nested/deeper/AGENTS.md": {},
+          "/home/shan/.hermes-workspaces/main/nested/AGENTS.md": {},
         },
         directories: {
-          "/home/shan": ["giles"],
-          "/home/shan/giles": ["nested"],
-          "/home/shan/giles/nested": ["deeper"],
+          "/home/shan/.hermes-workspaces": ["main"],
+          "/home/shan/.hermes-workspaces/main": ["nested"],
+          "/home/shan/.hermes-workspaces/main/nested": ["deeper"],
         },
       }),
     });
 
     expect(result.files.map((file) => file.path)).toEqual([
-      "/home/shan/giles/nested/AGENTS.md",
+      "/home/shan/.hermes-workspaces/main/nested/AGENTS.md",
     ]);
   });
 });
