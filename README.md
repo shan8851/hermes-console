@@ -26,7 +26,6 @@ Hermes Console is a visibility-first interface for understanding what your Herme
 
 Hermes Console makes your Hermes setup legible: sessions, cron jobs, skills, memory, config, and key files in one calm place.
 
-## Docs
+## Status
 
-- `docs/prd.md` — product requirements doc
-- `docs/implementation-plan.md` — scoped delivery plan with small slices
+Bootstrap in progress. The repo currently contains the initial Next.js app scaffold, base styling, and first test wiring for Milestone 0A.
