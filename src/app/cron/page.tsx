@@ -1,5 +1,6 @@
+import { CronBrowser } from "@/features/cron/components/cron-browser";
+import { readHermesCron } from "@/features/cron/read-hermes-cron";
 import { createSectionMetadata } from "@/lib/create-section-metadata";
-import { PlaceholderPage } from "@/components/placeholders/placeholder-page";
 
 export const metadata = createSectionMetadata(
   "Cron",
@@ -7,16 +8,7 @@ export const metadata = createSectionMetadata(
 );
 
 export default function CronPage() {
-  return (
-    <PlaceholderPage
-      eyebrow="Cron"
-      title="Scheduled work should be obvious, not archaeology"
-      description="The cron route will focus on schedules, state, run history, and simple warning signals for stale or failing jobs."
-      bullets={[
-        "Job list with enabled state, schedule, and next run.",
-        "Recent run history with status and timing.",
-        "Low-noise warning chips for stale or broken jobs.",
-      ]}
-    />
-  );
+  const index = readHermesCron();
+
+  return <CronBrowser jobs={index.jobs} />;
 }
