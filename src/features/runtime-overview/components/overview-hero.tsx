@@ -1,3 +1,4 @@
+import { RefreshButton } from "@/components/ui/refresh-button";
 import type { RuntimeOverviewSummary } from "@/features/runtime-overview/types";
 
 function verdictClasses(status: RuntimeOverviewSummary["verdict"]["status"]) {
@@ -16,7 +17,10 @@ export function OverviewHero({ overview }: { overview: RuntimeOverviewSummary })
     <section className="rounded-2xl border border-border bg-surface/80 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="max-w-3xl">
-          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-accent">Overview</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-accent">Overview</p>
+            <RefreshButton loadedAt={overview.capturedAt ?? new Date().toISOString()} />
+          </div>
           <h2 className="mt-3 font-[family-name:var(--font-bricolage)] text-xl font-semibold tracking-tight text-fg-strong sm:text-2xl">
             {overview.verdict.summary}
           </h2>

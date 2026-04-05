@@ -448,7 +448,7 @@ function envHasAny(envEntries: Map<string, string>, keys: string[]) {
   return keys.some((key) => Boolean(envEntries.get(key)));
 }
 
-function buildWarnings({ update, doctor, gateway, memoryPressure, cron }: { update: UpdateStatusSummary; doctor: DoctorSnapshotSummary; gateway: GatewaySummary; memoryPressure: MemoryPressureLevel; cron: { jobs: Array<{ statusTone: string; latestOutputState: string }> } }) {
+function buildWarnings({ update, doctor, gateway, memoryPressure, cron }: { update: UpdateStatusSummary; doctor: DoctorSnapshotSummary; gateway: GatewaySummary; memoryPressure: MemoryPressureLevel; cron: { jobs: Array<{ attentionLevel: string; overdue: boolean; failureStreak: number }> } }) {
   const warnings: OverviewWarning[] = [];
 
   if (gateway.state !== "running") {
@@ -485,9 +485,20 @@ function buildWarnings({ update, doctor, gateway, memoryPressure, cron }: { upda
     });
   }
 
-  const failingCronJobs = cron.jobs.filter((job) => job.statusTone === "error").length;
-  if (failingCronJobs > 0) {
-    warnings.push({ id: "cron-failing", tone: "warning", title: `${failingCronJobs} cron job${failingCronJobs === 1 ? "" : "s"} look unhealthy`, detail: "The most recent run state for one or more scheduled jobs is failing." });
+  const cronAttentionJobs = cron.jobs.filter((job) => job.attentionLevel === "warning" || job.attentionLevel === "critical").length;
+  const overdueCronJobs = cron.jobs.filter((job) => job.overdue).length;
+  const streakingCronJobs = cron.jobs.filter((job) => job.failureStreak > 0).length;
+
+  if (cronAttentionJobs > 0) {
+    warnings.push({
+      id: "cron-attention",
+      tone: overdueCronJobs > 0 || streakingCronJobs >= 2 ? "warning" : "info",
+      title: `${cronAttentionJobs} cron job${cronAttentionJobs === 1 ? "" : "s"} need attention`,
+      detail: [
+        overdueCronJobs > 0 ? `${overdueCronJobs} overdue` : null,
+        streakingCronJobs > 0 ? `${streakingCronJobs} on a failure streak` : null,
+      ].filter(Boolean).join(" · ") || "Recent cron signals suggest one or more jobs need a closer look.",
+    });
   }
 
   return warnings;
@@ -608,7 +619,7 @@ export function composeRuntimeOverview({ installation, gateway, channels, update
   config: ConfigPostureSummary;
   memory: { files: { memory: { pressureLevel: MemoryPressureLevel }; user: { pressureLevel: MemoryPressureLevel } } };
   sessions: { sessions: Array<unknown> };
-  cron: { jobs: Array<{ statusTone: string; latestOutputState: string }> };
+  cron: { jobs: Array<{ statusTone: string; latestOutputState: string; attentionLevel: string; overdue: boolean; failureStreak: number }> };
   status?: StatusSnapshotSummary;
   doctor?: DoctorSnapshotSummary;
   envEntries?: Map<string, string>;
@@ -653,9 +664,9 @@ export function composeRuntimeOverview({ installation, gateway, channels, update
     runtimeProfile: buildRuntimeProfile(config, safeEnvEntries),
     activity: {
       sessionCount: sessions.sessions.length,
-      failingCronJobs: cron.jobs.filter((job) => job.statusTone === "error").length,
+      cronAttentionJobs: cron.jobs.filter((job) => job.attentionLevel === "warning" || job.attentionLevel === "critical").length,
+      overdueCronJobs: cron.jobs.filter((job) => job.overdue).length,
       contentfulCronJobs: cron.jobs.filter((job) => job.latestOutputState === "contentful").length,
-      silentCronJobs: cron.jobs.filter((job) => job.latestOutputState === "silent").length,
       memoryPressure,
     },
     installStatus: installation.status,

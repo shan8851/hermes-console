@@ -3,8 +3,8 @@ import type { RuntimeOverviewSummary } from "@/features/runtime-overview/types";
 export function OverviewActivity({ overview }: { overview: RuntimeOverviewSummary }) {
   const items = [
     { label: "sessions", value: String(overview.activity.sessionCount), detail: "Total indexed sessions across agents." },
-    { label: "cron failing", value: String(overview.activity.failingCronJobs), detail: "Jobs with errors in their last run." },
-    { label: "cron contentful", value: String(overview.activity.contentfulCronJobs), detail: "Jobs that produced output in their last run." },
+    { label: "cron attention", value: String(overview.activity.cronAttentionJobs), detail: "Jobs that are overdue, flaky, or currently failing." },
+    { label: "cron overdue", value: String(overview.activity.overdueCronJobs), detail: "Enabled jobs whose next run time is more than 30 minutes late." },
     { label: "memory pressure", value: overview.activity.memoryPressure.replace(/_/g, " "), detail: "Highest memory usage across files." },
   ];
 

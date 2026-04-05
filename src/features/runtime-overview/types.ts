@@ -117,9 +117,9 @@ export type RuntimeOverviewSummary = {
   runtimeProfile: RuntimeProfileItem[];
   activity: {
     sessionCount: number;
-    failingCronJobs: number;
+    cronAttentionJobs: number;
+    overdueCronJobs: number;
     contentfulCronJobs: number;
-    silentCronJobs: number;
     memoryPressure: MemoryPressureLevel;
   };
   installStatus: string;

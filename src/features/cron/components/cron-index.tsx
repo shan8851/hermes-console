@@ -23,6 +23,19 @@ function statusBadgeClass(tone: HermesCronJobSummary["statusTone"]) {
   }
 }
 
+function attentionBadgeClass(level: HermesCronJobSummary["attentionLevel"]) {
+  switch (level) {
+    case "critical":
+      return "border-red-500/30 bg-red-500/10 text-red-200";
+    case "warning":
+      return "border-amber-500/30 bg-amber-500/10 text-amber-200";
+    case "muted":
+      return "border-border/80 bg-bg/40 text-fg-muted";
+    default:
+      return "border-emerald-500/30 bg-emerald-500/10 text-emerald-200";
+  }
+}
+
 function outputBadgeLabel(state: HermesCronJobSummary["latestOutputState"]) {
   if (state === "silent") {
     return "silent";
@@ -66,10 +79,15 @@ export function CronIndex({ jobs }: { jobs: HermesCronJobSummary[] }) {
                   <p className="text-sm font-medium text-fg-strong">{job.name}</p>
                   <span className="rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.16em] text-accent">{job.agentLabel}</span>
                   <span className={["rounded-full border px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.16em]", statusBadgeClass(job.statusTone)].join(" ")}>{job.lastStatus ?? job.state ?? (job.enabled ? "scheduled" : "disabled")}</span>
+                  <span className={["rounded-full border px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.16em]", attentionBadgeClass(job.attentionLevel)].join(" ")}>{job.attentionLevel.replace("_", " ")}</span>
                   <span className="rounded-full border border-border/80 bg-bg/40 px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.16em] text-fg-muted">{outputBadgeLabel(job.latestOutputState)}</span>
                 </div>
                 <p className="mt-2 truncate text-sm leading-6 text-fg-muted">{job.scheduleDisplay} · deliver {job.deliver ?? "unknown"}</p>
                 <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-fg-muted">
+                  {job.overdue ? <span className="text-amber-200">overdue</span> : null}
+                  {job.failureStreak > 0 ? <span className={job.failureStreak >= 2 ? "text-red-200" : "text-amber-200"}>streak {job.failureStreak}</span> : null}
+                  {job.recentFailureCount > 0 ? <span>{job.recentFailureCount}/5 recent failures</span> : null}
+                  {job.latestDurationMs != null ? <span>last {Math.round(job.latestDurationMs / 1000)}s</span> : null}
                   <span>{job.recentOutputCount} outputs</span>
                   {job.repeatCompleted != null ? <span>{job.repeatCompleted} completed</span> : null}
                   {job.originChatName ? <span>{job.originChatName}</span> : null}

@@ -42,9 +42,25 @@ export type CronRunOutputRecord = {
   rawContent: string;
 };
 
+export type CronObservedRunRecord = {
+  id: string;
+  jobId: string;
+  startedAt: string;
+  endedAt: string | null;
+  durationMs: number | null;
+  success: boolean;
+};
+
 export type HermesCronJobSummary = CronJobRecord & {
   summaryId: string;
   statusTone: "healthy" | "warning" | "error" | "muted";
+  attentionLevel: "healthy" | "warning" | "critical" | "muted";
+  overdue: boolean;
+  failureStreak: number;
+  recentFailureCount: number;
+  observedRunCount: number;
+  latestDurationMs: number | null;
+  averageDurationMs: number | null;
   latestOutputState: CronRunOutputState;
   recentOutputCount: number;
 };

@@ -4,6 +4,7 @@ import {
   buildCronJobDetail,
   normalizeCronJobs,
   type CronJobRecord,
+  type CronObservedRunRecord,
   type CronRunOutputRecord,
 } from "@/features/cron/read-cron";
 
@@ -29,6 +30,16 @@ function createJob(overrides: Partial<CronJobRecord> = {}): CronJobRecord {
     scheduleKind: "cron",
     repeatCompleted: 203,
     originChatName: null,
+    statusTone: "healthy",
+    attentionLevel: "healthy",
+    overdue: false,
+    failureStreak: 0,
+    recentFailureCount: 0,
+    observedRunCount: 1,
+    latestDurationMs: 10_000,
+    averageDurationMs: 10_000,
+    latestOutputState: "silent",
+    recentOutputCount: 1,
     ...overrides,
   };
 }
@@ -43,6 +54,18 @@ function createOutput(overrides: Partial<CronRunOutputRecord> = {}): CronRunOutp
     responsePreview: "[SILENT]",
     responseState: "silent",
     rawContent: "# Cron Job\n\n## Response\n\n[SILENT]\n",
+    ...overrides,
+  };
+}
+
+function createObservedRun(overrides: Partial<CronObservedRunRecord> = {}): CronObservedRunRecord {
+  return {
+    id: "cron_0e9490927b08_20260404_150023",
+    jobId: "0e9490927b08",
+    startedAt: "2026-04-04T15:00:23.000Z",
+    endedAt: "2026-04-04T15:00:33.000Z",
+    durationMs: 10_000,
+    success: true,
     ...overrides,
   };
 }
@@ -80,6 +103,8 @@ describe("normalizeCronJobs", () => {
         ],
       },
       outputsByJobId: new Map([["0e9490927b08", [createOutput()]]]),
+      runsByJobId: new Map([["0e9490927b08", [createObservedRun()]]]),
+      now: "2026-04-04T15:20:00.000Z",
     });
 
     expect(jobs).toEqual([
@@ -89,6 +114,11 @@ describe("normalizeCronJobs", () => {
         jobId: "0e9490927b08",
         name: "Cron alert observer -> Discord alerts",
         statusTone: "healthy",
+        attentionLevel: "healthy",
+        failureStreak: 0,
+        recentFailureCount: 0,
+        observedRunCount: 1,
+        latestDurationMs: 10000,
         latestOutputState: "silent",
         recentOutputCount: 1,
       }),
@@ -127,14 +157,71 @@ describe("normalizeCronJobs", () => {
         ],
       },
       outputsByJobId: new Map(),
+      runsByJobId: new Map(),
+      now: "2026-04-04T12:00:00.000Z",
     });
 
     expect(jobs[0]).toMatchObject({
       enabled: false,
       statusTone: "error",
+      attentionLevel: "muted",
       lastStatus: "error",
       lastError: "boom",
       originChatName: "COOPER_LAND / #general / Cron migration",
+    });
+  });
+
+  it("marks overdue jobs and critical failure streaks", () => {
+    const jobs = normalizeCronJobs({
+      agent: {
+        id: "default",
+        label: "Default",
+        rootPath: "/home/shan/.hermes",
+        source: "root",
+      },
+      rawJobs: {
+        jobs: [
+          {
+            id: "0e9490927b08",
+            name: "Cron alert observer -> Discord alerts",
+            prompt: "Run playbook `cron-alert-observer.md` exactly.",
+            skills: [],
+            skill: null,
+            schedule: { kind: "cron", expr: "*/15 * * * *", display: "*/15 * * * *" },
+            schedule_display: "*/15 * * * *",
+            repeat: { times: null, completed: 203 },
+            enabled: true,
+            state: "scheduled",
+            created_at: "2026-04-02T14:55:53.064175+01:00",
+            next_run_at: "2026-04-04T14:00:00+00:00",
+            last_run_at: "2026-04-04T13:45:00+00:00",
+            last_status: "error",
+            last_error: "boom",
+            deliver: "discord:1489250470147919902",
+            origin: null,
+          },
+        ],
+      },
+      outputsByJobId: new Map(),
+      runsByJobId: new Map([
+        [
+          "0e9490927b08",
+          [
+            createObservedRun({ id: "run-3", success: false, startedAt: "2026-04-04T13:45:00.000Z", endedAt: "2026-04-04T13:45:20.000Z", durationMs: 20_000 }),
+            createObservedRun({ id: "run-2", success: false, startedAt: "2026-04-04T13:30:00.000Z", endedAt: "2026-04-04T13:30:15.000Z", durationMs: 15_000 }),
+            createObservedRun({ id: "run-1", success: true, startedAt: "2026-04-04T13:15:00.000Z", endedAt: "2026-04-04T13:15:08.000Z", durationMs: 8_000 }),
+          ],
+        ],
+      ]),
+      now: "2026-04-04T15:05:00.000Z",
+    });
+
+    expect(jobs[0]).toMatchObject({
+      overdue: true,
+      failureStreak: 2,
+      recentFailureCount: 2,
+      attentionLevel: "critical",
+      latestDurationMs: 20000,
     });
   });
 });

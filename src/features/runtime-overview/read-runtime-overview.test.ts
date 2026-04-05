@@ -183,8 +183,8 @@ describe("composeRuntimeOverview", () => {
       },
       cron: {
         jobs: [
-          { statusTone: "healthy", latestOutputState: "silent" },
-          { statusTone: "error", latestOutputState: "contentful" },
+          { statusTone: "healthy", latestOutputState: "silent", attentionLevel: "healthy", overdue: false, failureStreak: 0 },
+          { statusTone: "error", latestOutputState: "contentful", attentionLevel: "critical", overdue: true, failureStreak: 2 },
         ],
       },
     });
@@ -197,7 +197,8 @@ describe("composeRuntimeOverview", () => {
       doctorIssueCount: 1,
       activity: {
         sessionCount: 3,
-        failingCronJobs: 1,
+        cronAttentionJobs: 1,
+        overdueCronJobs: 1,
         contentfulCronJobs: 1,
         memoryPressure: "near_limit",
       },
