@@ -1,39 +1,35 @@
 import type { RuntimeOverviewSummary } from "@/features/runtime-overview/types";
 
-function toneClasses(tone: "critical" | "warning" | "info") {
+const toneDot = (tone: "critical" | "warning" | "info") => {
   switch (tone) {
     case "critical":
-      return "border-rose-500/30 bg-rose-500/10 text-rose-100";
+      return "bg-rose-400";
     case "warning":
-      return "border-amber-500/30 bg-amber-500/10 text-amber-100";
+      return "bg-amber-400";
     default:
-      return "border-sky-500/30 bg-sky-500/10 text-sky-100";
+      return "bg-sky-400";
   }
-}
+};
 
 export function OverviewAttention({ overview }: { overview: RuntimeOverviewSummary }) {
-  return (
-    <section className="rounded-xl border border-border bg-surface/70 p-4">
-      <div className="mb-4">
-        <h3 className="font-[family-name:var(--font-bricolage)] text-lg font-semibold text-fg-strong">Warnings</h3>
-        <p className="mt-2 text-sm leading-6 text-fg-muted">Issues that need attention.</p>
-      </div>
+  if (overview.warnings.length === 0) return null;
 
-      {overview.warnings.length === 0 ? (
-        <div className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">
-          No warnings. Everything looks good.
-        </div>
-      ) : (
-        <div className="grid gap-3 lg:grid-cols-2">
-          {overview.warnings.map((warning) => (
-            <article key={warning.id} className={["rounded-lg border p-4", toneClasses(warning.tone)].join(" ")}>
-              <p className="font-mono text-[11px] uppercase tracking-[0.18em] opacity-80">{warning.tone.replace("_", " ")}</p>
-              <p className="mt-2 text-sm font-medium text-current">{warning.title}</p>
-              <p className="mt-2 text-sm leading-6 opacity-85">{warning.detail}</p>
-            </article>
-          ))}
-        </div>
-      )}
+  return (
+    <section>
+      <h3 className="mb-4 font-[family-name:var(--font-bricolage)] text-lg font-semibold text-fg-strong">
+        Notices
+      </h3>
+      <div className="rounded-lg border border-border/70 bg-bg/40 divide-y divide-border/50">
+        {overview.warnings.map((warning) => (
+          <article key={warning.id} className="flex gap-3 px-4 py-3">
+            <span className={["mt-1.5 inline-block h-2 w-2 shrink-0 rounded-full", toneDot(warning.tone)].join(" ")} />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-fg-strong">{warning.title}</p>
+              <p className="mt-0.5 text-sm leading-6 text-fg-muted">{warning.detail}</p>
+            </div>
+          </article>
+        ))}
+      </div>
     </section>
   );
 }

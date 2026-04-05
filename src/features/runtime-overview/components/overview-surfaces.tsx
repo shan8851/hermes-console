@@ -1,6 +1,6 @@
 import type { RuntimeOverviewSummary } from "@/features/runtime-overview/types";
 
-function statusPill(configured: boolean, live: boolean | null) {
+const statusPill = (configured: boolean, live: boolean | null) => {
   if (!configured) {
     return { label: "not configured", className: "border-border/80 bg-bg/40 text-fg-muted" };
   }
@@ -11,18 +11,17 @@ function statusPill(configured: boolean, live: boolean | null) {
     return { label: "configured", className: "border-amber-500/30 bg-amber-500/10 text-amber-200" };
   }
   return { label: "unknown", className: "border-border/80 bg-bg/40 text-fg-muted" };
-}
+};
 
 export function OverviewSurfaces({ overview }: { overview: RuntimeOverviewSummary }) {
   const configured = overview.platforms.filter((platform) => platform.configured);
   const unconfigured = overview.platforms.filter((platform) => !platform.configured);
 
   return (
-    <section className="rounded-xl border border-border bg-surface/70 p-4">
-      <div className="mb-4">
-        <h3 className="font-[family-name:var(--font-bricolage)] text-lg font-semibold text-fg-strong">Connected surfaces</h3>
-        <p className="mt-2 text-sm leading-6 text-fg-muted">Which messaging surfaces are configured, which ones look live right now, and which defaults change behaviour in practice.</p>
-      </div>
+    <section>
+      <h3 className="mb-4 font-[family-name:var(--font-bricolage)] text-lg font-semibold text-fg-strong">
+        Connected surfaces
+      </h3>
 
       {configured.length > 0 ? (
         <div className="grid gap-3 lg:grid-cols-2">
@@ -50,7 +49,7 @@ export function OverviewSurfaces({ overview }: { overview: RuntimeOverviewSummar
         </div>
       ) : (
         <div className="rounded-md border border-dashed border-border/80 p-4 text-sm leading-6 text-fg-muted">
-          No configured messaging surfaces were detected from the current snapshot.
+          No configured messaging surfaces detected.
         </div>
       )}
 

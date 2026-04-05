@@ -12,8 +12,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-4 lg:px-6 lg:py-5">
           {children}
         </main>
-        <footer className="mx-auto w-full max-w-6xl px-4 pb-6 pt-2 text-xs text-fg-faint lg:px-6">
-          Built by {" "}
+        <footer className="mx-auto mt-8 w-full max-w-6xl border-t border-border/40 px-4 py-6 text-xs text-fg-faint lg:px-6">
+          Built by{" "}
           <a
             href="https://shan8851.com"
             target="_blank"

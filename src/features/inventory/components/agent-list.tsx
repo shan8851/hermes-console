@@ -11,7 +11,7 @@ const presenceLabels: Array<keyof HermesAgentIdentity["presence"]> = [
 
 export function AgentList({ agents }: { agents: HermesAgentIdentity[] }) {
   return (
-    <section className="rounded-lg border border-border bg-surface/70">
+    <section className="rounded-lg border border-border/70 bg-bg/40">
       <div className="border-b border-border px-4 py-3">
         <h3 className="font-[family-name:var(--font-bricolage)] text-base font-semibold text-fg-strong">
           Detected agents
@@ -50,7 +50,7 @@ export function AgentList({ agents }: { agents: HermesAgentIdentity[] }) {
                     className={[
                       "rounded-md border px-2 py-1 font-mono text-[11px] uppercase tracking-[0.12em]",
                       agent.presence[key]
-                        ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-300"
+                        ? "border-emerald-500/15 bg-emerald-500/5 text-emerald-300"
                         : "border-border bg-black/10 text-fg-faint",
                     ].join(" ")}
                   >
