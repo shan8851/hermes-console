@@ -23,6 +23,15 @@ export function AppTopbar() {
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-surface/95 px-6 py-3 backdrop-blur">
       <div className="flex items-center justify-end gap-2 font-[family-name:var(--font-jetbrains)] text-xs">
+        <a
+          href="https://github.com/shan8851/hermes-console"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="Hermes Console on GitHub"
+          className="rounded-md border border-border/80 bg-bg/40 px-2 py-1 text-fg-muted transition-colors hover:border-accent/40 hover:bg-accent/5 hover:text-fg"
+        >
+          GitHub
+        </a>
         <span className={["rounded-md px-2 py-1", verdictClass(overview.verdict.status)].join(" ")}>
           {overview.verdict.label}
         </span>
