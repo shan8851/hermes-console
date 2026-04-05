@@ -22,19 +22,26 @@ export function AppSidebar() {
       <nav aria-label="Primary" className="flex flex-col gap-0.5">
         {appRoutes.map((route) => {
           const active = isRouteActive(pathname, route.href);
+          const Icon = route.icon;
 
           return (
             <Link
               key={route.href}
               href={route.href}
               className={[
-                "relative rounded-md px-3 py-2 text-sm transition-colors",
+                "relative flex items-start gap-3 rounded-md px-3 py-2 transition-colors",
                 active
-                  ? "border-l-2 border-accent bg-accent/10 font-medium text-fg-strong"
-                  : "border-l-2 border-transparent text-fg-muted hover:bg-white/5 hover:text-fg",
+                  ? "border-l-2 border-accent bg-accent/10"
+                  : "border-l-2 border-transparent hover:bg-white/5",
               ].join(" ")}
             >
-              {route.label}
+              <Icon className={["mt-0.5 h-4 w-4 shrink-0", active ? "text-accent" : "text-fg-muted"].join(" ")} />
+              <div className="min-w-0">
+                <p className={["text-sm", active ? "font-medium text-fg-strong" : "text-fg-muted"].join(" ")}>
+                  {route.label}
+                </p>
+                <p className="text-[11px] leading-4 text-fg-faint">{route.description}</p>
+              </div>
             </Link>
           );
         })}

@@ -10,5 +10,5 @@ export const metadata = createSectionMetadata(
 export default function CronPage() {
   const index = readHermesCron();
 
-  return <CronBrowser jobs={index.jobs} />;
+  return <CronBrowser jobs={index.jobs} loadedAt={new Date().toISOString()} />;
 }

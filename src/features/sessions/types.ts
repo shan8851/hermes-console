@@ -98,19 +98,3 @@ export type HermesSessionsIndex = {
   agentsWithSessions: number;
 };
 
-export type HermesSessionPreviewMessage = {
-  id: number;
-  role: string;
-  content: string;
-  toolName: string | null;
-  timestamp: string;
-  tokenCount: number | null;
-};
-
-export type HermesSessionDetail = {
-  summary: HermesSessionSummary;
-  preview: HermesSessionPreviewMessage[];
-  previewText: string;
-  messageCount: number;
-  hasMessagePreview: boolean;
-};

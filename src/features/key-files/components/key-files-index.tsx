@@ -47,13 +47,13 @@ export function KeyFilesIndex({
         {
           id: "hermes",
           title: "Hermes root",
-          description: "Native Hermes files under the resolved runtime root.",
+          description: "Native Hermes files discovered under the resolved runtime root.",
           files: grouped.hermes,
         },
         {
           id: "workspace",
           title: "Workspace root",
-          description: "Bounded markdown and instruction files from the configured workspace scope.",
+          description: "Markdown and instruction files from the bounded workspace scan.",
           files: grouped.workspace,
         },
       ].map((group) => (
@@ -106,7 +106,7 @@ export function KeyFilesIndex({
               })
             ) : (
               <div className="rounded-md border border-dashed border-border/80 p-3 text-sm leading-6 text-fg-muted">
-                No matching files were discovered in this scope.
+                No matching high-signal files were discovered in this scope.
               </div>
             )}
           </div>

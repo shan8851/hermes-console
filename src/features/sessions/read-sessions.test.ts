@@ -2,10 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyCronJobNames,
-  buildSessionDetail,
   combineAgentSessions,
   parseMessagingSessionIndex,
-  type AgentSessionMessageRecord,
   type AgentStateSessionRecord,
   type MessagingSessionRecord,
 } from "@/features/sessions/read-sessions";
@@ -187,7 +185,7 @@ describe("combineAgentSessions", () => {
   });
 });
 
-describe("buildSessionDetail", () => {
+describe("token and cron enrichment", () => {
   it("falls back to state token totals when messaging totals are zero", () => {
     const summary = combineAgentSessions({
       agent: {
@@ -233,48 +231,5 @@ describe("buildSessionDetail", () => {
       title: "Cron alert observer -> Discord alerts",
       sourceLabel: "cron",
     });
-  });
-
-  it("builds a read-only preview from session messages", () => {
-    const detail = buildSessionDetail({
-      summary: combineAgentSessions({
-        agent: {
-          id: "default",
-          label: "Default",
-          rootPath: "/home/shan/.hermes",
-          source: "root",
-        },
-        stateSessions: [createStateSession()],
-        messagingSessions: [createMessagingRecord()],
-      })[0],
-      messages: [
-        {
-          id: 1,
-          sessionId: "session-1",
-          role: "user",
-          content: "Can you ship Milestone 4?",
-          toolName: null,
-          timestamp: "2026-04-04T10:00:00.000Z",
-          tokenCount: 15,
-        },
-        {
-          id: 2,
-          sessionId: "session-1",
-          role: "assistant",
-          content: "Yep, working on it.",
-          toolName: null,
-          timestamp: "2026-04-04T10:00:05.000Z",
-          tokenCount: 22,
-        },
-      ] satisfies AgentSessionMessageRecord[],
-    });
-
-    expect(detail.preview).toEqual([
-      expect.objectContaining({ role: "user", content: "Can you ship Milestone 4?" }),
-      expect.objectContaining({ role: "assistant", content: "Yep, working on it." }),
-    ]);
-    expect(detail.previewText).toContain("user: Can you ship Milestone 4?");
-    expect(detail.previewText).toContain("assistant: Yep, working on it.");
-    expect(detail.messageCount).toBe(2);
   });
 });

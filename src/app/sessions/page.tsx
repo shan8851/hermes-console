@@ -10,5 +10,5 @@ export const metadata = createSectionMetadata(
 export default function SessionsPage() {
   const index = readHermesSessions();
 
-  return <SessionsBrowser sessions={index.sessions} />;
+  return <SessionsBrowser sessions={index.sessions} loadedAt={new Date().toISOString()} />;
 }

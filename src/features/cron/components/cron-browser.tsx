@@ -3,6 +3,7 @@
 import { useDeferredValue, useMemo, useState } from "react";
 
 import { AppSelect } from "@/components/ui/app-select";
+import { RefreshButton } from "@/components/ui/refresh-button";
 import { CronIndex } from "@/features/cron/components/cron-index";
 import { CronSummaryGrid } from "@/features/cron/components/cron-summary-grid";
 import type { HermesCronJobSummary } from "@/features/cron/types";
@@ -53,7 +54,7 @@ function filterJobs({
   });
 }
 
-export function CronBrowser({ jobs }: { jobs: HermesCronJobSummary[] }) {
+export function CronBrowser({ jobs, loadedAt }: { jobs: HermesCronJobSummary[]; loadedAt: string }) {
   const [query, setQuery] = useState("");
   const [agent, setAgent] = useState("all");
   const [status, setStatus] = useState("all");
@@ -81,15 +82,15 @@ export function CronBrowser({ jobs }: { jobs: HermesCronJobSummary[] }) {
       tone: "muted" as const,
     },
     {
-      label: "silent runs",
+      label: "silent",
       value: formatCount(filteredJobs.filter((job) => job.latestOutputState === "silent").length),
-      detail: "Jobs whose most recent captured output was intentionally silent.",
+      detail: "Jobs whose latest run produced no output.",
       tone: "default" as const,
     },
     {
-      label: "contentful",
+      label: "has output",
       value: formatCount(filteredJobs.filter((job) => job.latestOutputState === "contentful").length),
-      detail: "Jobs with a substantive latest output worth opening.",
+      detail: "Jobs whose latest run produced output.",
       tone: "default" as const,
     },
   ];
@@ -99,14 +100,10 @@ export function CronBrowser({ jobs }: { jobs: HermesCronJobSummary[] }) {
       <section className="max-w-4xl">
         <div className="flex flex-wrap items-center gap-3">
           <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">Cron</p>
+          <RefreshButton loadedAt={loadedAt} />
         </div>
-        <h2 className="mt-3 font-[family-name:var(--font-bricolage)] text-xl font-semibold tracking-tight text-fg-strong sm:text-2xl">Make scheduled work obvious instead of archaeological</h2>
-        <p className="mt-3 text-sm leading-7 text-fg-muted">This view reads the real <span className="font-mono text-xs text-fg">cron/jobs.json</span> files and recent output markdown so you can see what is scheduled, what actually ran, and whether the latest run produced anything useful.</p>
-        <div className="mt-4 flex flex-wrap gap-2 text-xs text-fg-muted">
-          <span className="rounded-md bg-accent/10 px-2 py-1 font-mono text-accent">cron/jobs.json</span>
-          <span className="rounded-md bg-accent/10 px-2 py-1 font-mono text-accent">cron/output/*</span>
-          <span className="rounded-md bg-accent/10 px-2 py-1 font-mono text-accent">all agents</span>
-        </div>
+        <h2 className="mt-3 font-[family-name:var(--font-bricolage)] text-xl font-semibold tracking-tight text-fg-strong sm:text-2xl">Scheduled Jobs</h2>
+        <p className="mt-3 text-sm leading-7 text-fg-muted">Scheduled jobs across agents, with run state and recent output.</p>
         <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1.8fr)_repeat(2,minmax(0,1fr))]">
           <input
             type="text"

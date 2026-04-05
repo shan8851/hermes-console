@@ -36,8 +36,8 @@ export function OverviewAccess({ overview }: { overview: RuntimeOverviewSummary 
   return (
     <section className="rounded-xl border border-border bg-surface/70 p-4">
       <div className="mb-4">
-        <h3 className="font-[family-name:var(--font-bricolage)] text-lg font-semibold text-fg-strong">Access posture</h3>
-        <p className="mt-2 text-sm leading-6 text-fg-muted">Separate auth sessions from API/tool access so the page answers whether Hermes can actually use the stuff you expect.</p>
+        <h3 className="font-[family-name:var(--font-bricolage)] text-lg font-semibold text-fg-strong">Access</h3>
+        <p className="mt-2 text-sm leading-6 text-fg-muted">Authentication and API credentials available to Hermes.</p>
       </div>
       <div className="grid gap-4 xl:grid-cols-2">
         <AccessColumn title="auth providers" items={overview.access.authProviders} />

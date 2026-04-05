@@ -460,7 +460,7 @@ function buildWarnings({ update, doctor, gateway, memoryPressure, cron }: { upda
       id: "update-behind",
       tone: "warning",
       title: `Hermes is ${update.behind} commit${update.behind === 1 ? "" : "s"} behind tracked upstream`,
-      detail: "The local install is drifting from upstream and should be reviewed before it gets weirder.",
+      detail: "The local installation is behind upstream and should be updated.",
     });
   }
 
@@ -471,7 +471,7 @@ function buildWarnings({ update, doctor, gateway, memoryPressure, cron }: { upda
         id: `doctor-${index}`,
         tone,
         title: issue,
-        detail: "Surfaced directly by `hermes doctor`.",
+        detail: "Reported by Hermes diagnostics.",
       };
     }));
   }
@@ -495,7 +495,7 @@ function buildWarnings({ update, doctor, gateway, memoryPressure, cron }: { upda
 
 function buildVerdict({ gateway, installation, warnings, connectedPlatforms }: { gateway: GatewaySummary; installation: { status: string; availableAgentCount: number; agents: Array<{ id: string }> }; warnings: OverviewWarning[]; connectedPlatforms: string[] }): OverviewVerdict {
   if (installation.availableAgentCount === 0 || gateway.state !== "running") {
-    return { status: "broken", label: "Broken", summary: "Core runtime checks are failing. Hermes is not in a trustworthy operator state yet." };
+    return { status: "broken", label: "Broken", summary: "Core runtime checks are failing. The installation needs attention." };
   }
 
   if (warnings.some((warning) => warning.tone === "critical" || warning.tone === "warning")) {
@@ -506,16 +506,16 @@ function buildVerdict({ gateway, installation, warnings, connectedPlatforms }: {
     };
   }
 
-  return { status: "solid", label: "Solid", summary: "Gateway, install posture, and connected surfaces all look coherent from this snapshot." };
+  return { status: "solid", label: "Solid", summary: "Gateway, installation, and connected surfaces all look healthy." };
 }
 
 function buildRuntimeHealthItems({ installation, gateway, update, doctor, connectedPlatforms, configuredPlatformCount }: { installation: { status: string; availableAgentCount: number; agents: Array<{ id: string }> }; gateway: GatewaySummary; update: UpdateStatusSummary; doctor: DoctorSnapshotSummary; connectedPlatforms: string[]; configuredPlatformCount: number }): RuntimeHealthItem[] {
   return [
-    { label: "install", value: installation.status, detail: `${installation.availableAgentCount} of ${installation.agents.length} agents look usable.`, tone: installation.status === "ready" ? "healthy" : "warning" },
-    { label: "gateway", value: gateway.state, detail: gateway.updatedAt ? `Last runtime snapshot ${new Date(gateway.updatedAt).toLocaleString()}` : "No runtime gateway snapshot found.", tone: gateway.state === "running" ? "healthy" : "critical" },
+    { label: "install", value: installation.status, detail: `${installation.availableAgentCount} of ${installation.agents.length} agents available.`, tone: installation.status === "ready" ? "healthy" : "warning" },
+    { label: "gateway", value: gateway.state, detail: gateway.updatedAt ? `Last updated ${new Date(gateway.updatedAt).toLocaleString()}` : "No gateway data available.", tone: gateway.state === "running" ? "healthy" : "critical" },
     { label: "surfaces live", value: `${connectedPlatforms.length} / ${configuredPlatformCount}`, detail: `${connectedPlatforms.length} live, ${configuredPlatformCount} configured.`, tone: connectedPlatforms.length > 0 ? "healthy" : "warning" },
-    { label: "doctor issues", value: String(doctor.issueCount), detail: doctor.issueCount > 0 ? "Hermes doctor surfaced warnings worth reviewing." : "No active doctor issues in the latest snapshot.", tone: doctor.issueCount > 0 ? "warning" : "healthy" },
-    { label: "update drift", value: update.status === "behind" ? `${update.behind} behind` : update.status === "up_to_date" ? "up to date" : "unknown", detail: update.checkedAt ? `Based on local update cache from ${new Date(update.checkedAt).toLocaleString()}.` : "No local update cache found.", tone: update.status === "behind" ? "warning" : update.status === "up_to_date" ? "healthy" : "default" },
+    { label: "doctor issues", value: String(doctor.issueCount), detail: doctor.issueCount > 0 ? "Diagnostics found issues to review." : "No issues found.", tone: doctor.issueCount > 0 ? "warning" : "healthy" },
+    { label: "update drift", value: update.status === "behind" ? `${update.behind} behind` : update.status === "up_to_date" ? "up to date" : "unknown", detail: update.checkedAt ? `Last checked ${new Date(update.checkedAt).toLocaleString()}.` : "Last check time unknown.", tone: update.status === "behind" ? "warning" : update.status === "up_to_date" ? "healthy" : "default" },
   ];
 }
 
@@ -564,18 +564,18 @@ function buildPlatformSummaries({ status, gateway, channels, config }: { status:
 
 function buildApiKeyChecks(envEntries: Map<string, string>): AccessCheckSummary[] {
   const checks: Array<{ name: string; detail: string; vars: string[] }> = [
-    { name: "Model access", detail: "OpenRouter or direct provider credentials are present for model calls.", vars: ["OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GLM_API_KEY", "KIMI_API_KEY", "MINIMAX_API_KEY", "MINIMAX_CN_API_KEY"] },
-    { name: "Voice access", detail: "Voice transcription / TTS credentials are present when using hosted voice providers.", vars: ["VOICE_TOOLS_OPENAI_KEY", "OPENAI_API_KEY", "ELEVENLABS_API_KEY"] },
-    { name: "Search backend", detail: "At least one web/search provider credential is available.", vars: ["EXA_API_KEY", "PARALLEL_API_KEY", "FIRECRAWL_API_KEY", "TAVILY_API_KEY"] },
-    { name: "Browser cloud", detail: "Browserbase credentials are available for hosted browser automation.", vars: ["BROWSERBASE_API_KEY", "BROWSERBASE_PROJECT_ID"] },
-    { name: "GitHub", detail: "GitHub token is available for repo, PR, and higher-limit skills.", vars: ["GITHUB_TOKEN"] },
+    { name: "Model access", detail: "LLM provider credentials.", vars: ["OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GLM_API_KEY", "KIMI_API_KEY", "MINIMAX_API_KEY", "MINIMAX_CN_API_KEY"] },
+    { name: "Voice access", detail: "Voice provider credentials.", vars: ["VOICE_TOOLS_OPENAI_KEY", "OPENAI_API_KEY", "ELEVENLABS_API_KEY"] },
+    { name: "Search backend", detail: "Web search credentials.", vars: ["EXA_API_KEY", "PARALLEL_API_KEY", "FIRECRAWL_API_KEY", "TAVILY_API_KEY"] },
+    { name: "Browser cloud", detail: "Browser automation credentials.", vars: ["BROWSERBASE_API_KEY", "BROWSERBASE_PROJECT_ID"] },
+    { name: "GitHub", detail: "GitHub API token.", vars: ["GITHUB_TOKEN"] },
   ];
 
   return checks.map((check) => ({ name: check.name, status: envHasAny(envEntries, check.vars) ? "available" : "missing", detail: check.detail }));
 }
 
 function buildAuthChecks(entries: StatusEntry[]): AccessCheckSummary[] {
-  return entries.map((entry) => ({ name: entry.name, status: summarizeCapabilityStatus(entry.state, entry.detail ?? ""), detail: entry.detail ?? "No detail returned by Hermes status." }));
+  return entries.map((entry) => ({ name: entry.name, status: summarizeCapabilityStatus(entry.state, entry.detail ?? ""), detail: entry.detail ?? "No details available." }));
 }
 
 function buildRuntimeProfile(config: ConfigPostureSummary, envEntries: Map<string, string>): RuntimeProfileItem[] {
@@ -593,8 +593,8 @@ function buildRuntimeProfile(config: ConfigPostureSummary, envEntries: Map<strin
   return [
     { label: "model", value: config.model ?? "unknown", detail: config.provider ?? "provider unknown" },
     { label: "search", value: config.webBackend ?? "unknown", detail: envHasAny(envEntries, ["EXA_API_KEY", "PARALLEL_API_KEY", "FIRECRAWL_API_KEY", "TAVILY_API_KEY"]) ? "Search credentials detected" : "No search-provider credentials detected" },
-    { label: "voice output", value: voiceOutput, detail: "Capability-first posture rather than provider-specific trivia." },
-    { label: "voice input", value: voiceInput, detail: "Shows whether Hermes can plausibly handle speech input on this install." },
+    { label: "voice output", value: voiceOutput, detail: "" },
+    { label: "voice input", value: voiceInput, detail: "" },
     { label: "approvals", value: config.approvalsMode ?? "unknown", detail: config.compressionEnabled == null ? "Compression unknown" : `Compression ${config.compressionEnabled ? "enabled" : "disabled"}` },
     { label: "security", value: config.tirithEnabled ? "tirith on" : config.tirithEnabled === false ? "tirith off" : "unknown", detail: config.redactSecrets == null ? "Secret redaction unknown" : `Redact secrets ${config.redactSecrets ? "on" : "off"}` },
   ];

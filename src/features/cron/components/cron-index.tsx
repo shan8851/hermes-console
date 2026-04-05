@@ -50,7 +50,7 @@ export function CronIndex({ jobs }: { jobs: HermesCronJobSummary[] }) {
     <section className="rounded-lg border border-border bg-surface/70 p-4 xl:max-h-[58rem] xl:overflow-auto">
       <div className="mb-4">
         <h3 className="font-[family-name:var(--font-bricolage)] text-base font-semibold text-fg-strong">Scheduled jobs</h3>
-        <p className="mt-2 text-sm leading-6 text-fg-muted">Schedules, last run state, and recent output signal across all detected agents.</p>
+        <p className="mt-2 text-sm leading-6 text-fg-muted">Jobs across all detected agents.</p>
       </div>
 
       <div className="space-y-3">

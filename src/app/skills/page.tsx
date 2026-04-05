@@ -10,5 +10,5 @@ export const metadata = createSectionMetadata(
 export default function SkillsPage() {
   const index = readHermesSkills();
 
-  return <SkillsBrowser skills={index.skills} />;
+  return <SkillsBrowser skills={index.skills} loadedAt={new Date().toISOString()} />;
 }

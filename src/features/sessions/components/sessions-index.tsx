@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import type { HermesSessionSummary } from "@/features/sessions/types";
 
 function formatTimestamp(value: string) {
@@ -22,10 +20,6 @@ function formatCost(value: number | null) {
   }).format(value);
 }
 
-function createSessionHref(session: HermesSessionSummary) {
-  return `/sessions/${session.agentId}/${session.sessionId}`;
-}
-
 export function SessionsIndex({ sessions }: { sessions: HermesSessionSummary[] }) {
   if (sessions.length === 0) {
     return (
@@ -45,7 +39,7 @@ export function SessionsIndex({ sessions }: { sessions: HermesSessionSummary[] }
             Recent sessions
           </h3>
           <p className="mt-2 text-sm leading-6 text-fg-muted">
-            Aggregated across detected agents. Messaging metadata appears when Hermes actually has it.
+            Sessions across all detected agents.
           </p>
         </div>
       </div>
@@ -55,47 +49,49 @@ export function SessionsIndex({ sessions }: { sessions: HermesSessionSummary[] }
           const formattedCost = formatCost(session.estimatedCostUsd);
 
           return (
-          <Link
-            key={session.id}
-            href={createSessionHref(session)}
-            className="block rounded-md border border-border/70 bg-bg/40 p-3 transition-colors hover:border-accent/40 hover:bg-accent/5"
-          >
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-sm font-medium text-fg-strong">{session.title}</p>
-                  <span className="rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.16em] text-accent">
-                    {session.agentLabel}
-                  </span>
-                  <span className="rounded-full border border-border/80 bg-bg/40 px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.16em] text-fg-muted">
-                    {session.sourceLabel}
-                  </span>
-                  {!session.hasMessagingMetadata ? (
-                    <span className="rounded-full border border-border/80 bg-bg/40 px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.16em] text-fg-muted">
-                      state only
+            <article
+              key={session.id}
+              className="rounded-md border border-border/70 bg-bg/40 p-3"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-medium text-fg-strong">{session.title}</p>
+                    <span className="rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.16em] text-accent">
+                      {session.agentLabel}
                     </span>
-                  ) : null}
+                    <span className="rounded-full border border-border/80 bg-bg/40 px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.16em] text-fg-muted">
+                      {session.sourceLabel}
+                    </span>
+                    {!session.hasMessagingMetadata ? (
+                      <span className="rounded-full border border-border/80 bg-bg/40 px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.16em] text-fg-muted">
+                        transcript only
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-2 truncate text-sm leading-6 text-fg-muted">
+                    {session.displayName ?? session.cronJobName ?? "—"}
+                  </p>
+                  <p className="mt-1 font-mono text-[11px] text-fg-faint">{session.sessionId}</p>
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-fg-muted">
+                    <span>{formatCount(session.messageCount)} messages</span>
+                    <span>{formatCount(session.toolCallCount)} tools</span>
+                    <span>{formatCount(session.totalTokens)} tokens</span>
+                    {session.model ? <span>{session.model}</span> : null}
+                    {formattedCost ? <span>{formattedCost}</span> : null}
+                    {session.memoryFlushed != null ? <span>{session.memoryFlushed ? "memory flushed" : "memory live"}</span> : null}
+                    {session.endedAt ? <span>ended: {session.endedAt ? new Date(session.endedAt).toLocaleString() : "—"}</span> : null}
+                  </div>
                 </div>
-                <p className="mt-2 truncate text-sm leading-6 text-fg-muted">
-                  {session.displayName ?? session.cronJobName ?? "No messaging display name for this session."}
-                </p>
-                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-fg-muted">
-                  <span>{formatCount(session.messageCount)} messages</span>
-                  <span>{formatCount(session.toolCallCount)} tools</span>
-                  <span>{formatCount(session.totalTokens)} tokens</span>
-                  {session.model ? <span>{session.model}</span> : null}
-                  {formattedCost ? <span>{formattedCost}</span> : null}
-                  {session.memoryFlushed != null ? <span>{session.memoryFlushed ? "memory flushed" : "memory live"}</span> : null}
-                </div>
-              </div>
 
-              <div className="text-right text-xs text-fg-muted">
-                <p className="font-medium text-fg">{formatTimestamp(session.lastActivityAt)}</p>
-                <p className="mt-1">started {formatTimestamp(session.startedAt)}</p>
+                <div className="text-right text-xs text-fg-muted">
+                  <p className="font-medium text-fg">{formatTimestamp(session.lastActivityAt)}</p>
+                  <p className="mt-1">started {formatTimestamp(session.startedAt)}</p>
+                </div>
               </div>
-            </div>
-          </Link>
-        );})}
+            </article>
+          );
+        })}
       </div>
     </section>
   );

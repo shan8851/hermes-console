@@ -25,7 +25,7 @@ const jetbrains = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "Hermes Console",
-  description: "Local-first web UI for understanding your Hermes setup.",
+  description: "Local-first visibility dashboard for Hermes.",
 };
 
 export default function RootLayout({

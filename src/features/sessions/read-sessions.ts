@@ -1,7 +1,5 @@
 import type {
-  AgentSessionMessageRecord,
   AgentStateSessionRecord,
-  HermesSessionDetail,
   HermesSessionSummary,
   MessagingSessionOrigin,
   MessagingSessionRecord,
@@ -235,16 +233,6 @@ export function combineAgentSessions({
     .sort(compareByLastActivity);
 }
 
-function normalizeMessageContent(value: string | null) {
-  const trimmed = value?.trim();
-
-  if (!trimmed) {
-    return "[empty]";
-  }
-
-  return trimmed;
-}
-
 export function applyCronJobNames({
   sessions,
   cronJobs,
@@ -273,35 +261,8 @@ export function applyCronJobNames({
   });
 }
 
-export function buildSessionDetail({
-  summary,
-  messages,
-}: {
-  summary: HermesSessionSummary;
-  messages: AgentSessionMessageRecord[];
-}): HermesSessionDetail {
-  const preview = messages.map((message) => ({
-    id: message.id,
-    role: message.role,
-    content: normalizeMessageContent(message.content),
-    toolName: message.toolName,
-    timestamp: message.timestamp,
-    tokenCount: message.tokenCount,
-  }));
-
-  return {
-    summary,
-    preview,
-    previewText: preview.map((message) => `${message.role}: ${message.content}`).join("\n\n"),
-    messageCount: preview.length,
-    hasMessagePreview: preview.length > 0,
-  };
-}
-
 export type {
-  AgentSessionMessageRecord,
   AgentStateSessionRecord,
-  HermesSessionDetail,
   HermesSessionSummary,
   HermesSessionsIndex,
   MessagingSessionRecord,

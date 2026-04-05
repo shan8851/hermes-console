@@ -43,8 +43,7 @@ export function MemoryFilePanel({
           <p className="mt-2 text-sm leading-6 text-fg-muted">{file.filePath}</p>
           {file.exists ? (
             <p className="mt-2 text-sm leading-6 text-fg-muted">
-              Hermes stores this as one markdown file. The blocks below are parsed from saved
-              sections so you can scan what has been captured over time.
+              Hermes stores this as one markdown file; the blocks below are parsed from saved sections so the file stays scannable.
             </p>
           ) : null}
         </div>
@@ -90,9 +89,9 @@ export function MemoryFilePanel({
           <div className="mt-4">
             <div className="mb-3 flex items-center justify-between gap-3">
               <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-faint">
-                parsed saved blocks
+                saved blocks
               </p>
-              <p className="text-xs text-fg-muted">ordered from the file, not native Hermes IDs</p>
+              <p className="text-xs text-fg-muted">ordered as they appear in the file, not native Hermes IDs</p>
             </div>
 
             {file.entries.length > 0 ? (
@@ -120,7 +119,7 @@ export function MemoryFilePanel({
         </>
       ) : (
         <div className="mt-4 rounded-md border border-dashed border-border/80 p-3 text-sm leading-6 text-fg-muted">
-          This surface was not found under the resolved Hermes root.
+          This file was not found under the resolved Hermes root.
         </div>
       )}
     </section>

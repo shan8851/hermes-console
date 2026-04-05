@@ -40,7 +40,7 @@ export function KeyFilePreview({
     return (
       <section className="rounded-lg border border-border bg-surface/70 p-4">
         <div className="rounded-md border border-dashed border-border/80 p-4 text-sm leading-6 text-fg-muted">
-          No high-signal files were discovered yet.
+          Select a file from the left to preview its raw contents and basic metadata.
         </div>
       </section>
     );
@@ -86,7 +86,7 @@ export function KeyFilePreview({
           </pre>
         ) : (
           <div className="mt-3 rounded-md border border-dashed border-border/80 p-3 text-sm leading-6 text-fg-muted">
-            This file could not be read as text.
+            This file could not be read as text from the current filesystem reader.
           </div>
         )}
       </div>

@@ -1,3 +1,4 @@
+import { RefreshButton } from "@/components/ui/refresh-button";
 import { MemoryFilePanel } from "@/features/memory/components/memory-file-panel";
 import { MemoryPressureBadge } from "@/features/memory/components/memory-pressure-badge";
 import { MemorySummaryGrid } from "@/features/memory/components/memory-summary-grid";
@@ -6,7 +7,7 @@ import { createSectionMetadata } from "@/lib/create-section-metadata";
 
 export const metadata = createSectionMetadata(
   "Memory",
-  "USER and MEMORY surfaces with usage indicators.",
+  "Memory files, usage, and saved blocks.",
 );
 
 function getOverallPressureLevel(memory: ReturnType<typeof readHermesMemory>) {
@@ -45,10 +46,10 @@ export default function MemoryPage() {
         memory.status === "ready" ? "✓ OK" : memory.status === "partial" ? "~ Partial" : "Missing",
       detail:
         memory.status === "ready"
-          ? "Both memory files were found and parsed."
+          ? "Both memory files found."
           : memory.status === "partial"
-            ? "One surface exists, but the other is missing."
-            : "No memory files were found under the resolved Hermes root.",
+            ? "One memory file found, the other is missing."
+            : "No memory files found.",
       tone: "default" as const,
     },
     {
@@ -66,7 +67,7 @@ export default function MemoryPage() {
     {
       label: "saved blocks",
       value: String(memory.files.memory.entries.length + memory.files.user.entries.length),
-      detail: `${memory.files.memory.entries.length} durable + ${memory.files.user.entries.length} user blocks`,
+      detail: `${memory.files.memory.entries.length} memory + ${memory.files.user.entries.length} user entries`,
       tone: "default" as const,
     },
   ];
@@ -79,36 +80,17 @@ export default function MemoryPage() {
             Memory
           </p>
           <MemoryPressureBadge level={overallPressure} />
+          <RefreshButton loadedAt={new Date().toISOString()} />
         </div>
         <h2 className="mt-3 font-[family-name:var(--font-bricolage)] text-xl font-semibold tracking-tight text-fg-strong sm:text-2xl">
-          See what Hermes has actually saved from working with you
+          Saved Memory
         </h2>
         <p className="mt-3 text-sm leading-7 text-fg-muted">
-          Hermes keeps durable memory in real markdown files rather than a hidden black box. This
-          page shows the current files, their pressure against configured limits, and the saved
-          blocks that have been captured over time.
+          Hermes stores durable memory in plain markdown files. This page shows current usage against configured limits and the saved blocks parsed out of those files.
         </p>
       </section>
 
       <MemorySummaryGrid items={summaryItems} />
-
-      <section className="rounded-lg border border-border bg-surface/70 p-4">
-        <h3 className="font-[family-name:var(--font-bricolage)] text-base font-semibold text-fg-strong">
-          File model
-        </h3>
-        <ul className="mt-3 space-y-2 text-sm leading-6 text-fg-muted">
-          <li>
-            - <span className="font-mono text-xs text-fg">MEMORY.md</span> and <span className="font-mono text-xs text-fg">USER.md</span> are the real source files.
-          </li>
-          <li>
-            - We parse <span className="font-mono text-xs text-fg">§</span>-separated sections into
-            saved blocks so the file stays scannable instead of becoming one giant wall.
-          </li>
-          <li>
-            - Limits currently resolve from <span className="font-mono text-xs text-fg">config.yaml</span> when available, otherwise they fall back to defaults.
-          </li>
-        </ul>
-      </section>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <MemoryFilePanel file={memory.files.memory} limitSource={memory.limits.memory.source} />

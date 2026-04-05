@@ -2,17 +2,17 @@ import type { RuntimeOverviewSummary } from "@/features/runtime-overview/types";
 
 export function OverviewActivity({ overview }: { overview: RuntimeOverviewSummary }) {
   const items = [
-    { label: "sessions", value: String(overview.activity.sessionCount), detail: "Recent cross-agent session count currently indexed." },
-    { label: "cron failing", value: String(overview.activity.failingCronJobs), detail: "Jobs with explicit errors or failing last-run state." },
-    { label: "cron contentful", value: String(overview.activity.contentfulCronJobs), detail: "Jobs whose latest output has actual content worth opening." },
-    { label: "memory pressure", value: overview.activity.memoryPressure.replace(/_/g, " "), detail: "Highest pressure across MEMORY.md and USER.md." },
+    { label: "sessions", value: String(overview.activity.sessionCount), detail: "Total indexed sessions across agents." },
+    { label: "cron failing", value: String(overview.activity.failingCronJobs), detail: "Jobs with errors in their last run." },
+    { label: "cron contentful", value: String(overview.activity.contentfulCronJobs), detail: "Jobs that produced output in their last run." },
+    { label: "memory pressure", value: overview.activity.memoryPressure.replace(/_/g, " "), detail: "Highest memory usage across files." },
   ];
 
   return (
     <section className="rounded-xl border border-border bg-surface/70 p-4">
       <div className="mb-4">
         <h3 className="font-[family-name:var(--font-bricolage)] text-lg font-semibold text-fg-strong">Activity snapshot</h3>
-        <p className="mt-2 text-sm leading-6 text-fg-muted">Useful secondary signal only. Heavy detail still belongs to Sessions and Cron.</p>
+        <p className="mt-2 text-sm leading-6 text-fg-muted">Recent activity across sessions, cron, and memory.</p>
       </div>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {items.map((item) => (

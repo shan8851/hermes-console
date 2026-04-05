@@ -47,9 +47,9 @@ export function CronDetailView({ detail }: { detail: HermesCronJobDetail }) {
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
           { label: "next run", value: formatTimestamp(job.nextRunAt), detail: `last ${formatTimestamp(job.lastRunAt)}` },
-          { label: "outputs", value: String(detail.recentOutputCount), detail: `${detail.latestOutputState} latest output state` },
-          { label: "completed", value: job.repeatCompleted == null ? "—" : String(job.repeatCompleted), detail: job.scheduleKind ?? "unknown schedule kind" },
-          { label: "created", value: formatTimestamp(job.createdAt), detail: job.originChatName ?? "No explicit origin context" },
+          { label: "outputs", value: String(detail.recentOutputCount), detail: `Latest: ${detail.latestOutputState}` },
+          { label: "completed", value: job.repeatCompleted == null ? "—" : String(job.repeatCompleted), detail: job.scheduleKind ?? "Schedule type unknown" },
+          { label: "created", value: formatTimestamp(job.createdAt), detail: job.originChatName ?? "No origin context" },
         ].map((item) => (
           <article key={item.label} className="rounded-lg border border-border bg-surface/70 p-4">
             <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-faint">{item.label}</p>
@@ -100,7 +100,7 @@ export function CronDetailView({ detail }: { detail: HermesCronJobDetail }) {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 className="font-[family-name:var(--font-bricolage)] text-base font-semibold text-fg-strong">Recent outputs</h3>
-              <p className="mt-2 text-sm leading-6 text-fg-muted">Captured markdown outputs under <span className="font-mono text-xs text-fg">cron/output/{job.jobId}</span>.</p>
+              <p className="mt-2 text-sm leading-6 text-fg-muted">Recent output from this job.</p>
             </div>
             <p className="text-xs text-fg-muted">{detail.recentOutputCount} files</p>
           </div>
@@ -121,7 +121,7 @@ export function CronDetailView({ detail }: { detail: HermesCronJobDetail }) {
               ))}
             </div>
           ) : (
-            <div className="mt-4 rounded-md border border-dashed border-border/80 p-4 text-sm leading-6 text-fg-muted">No output history was found for this job yet.</div>
+            <div className="mt-4 rounded-md border border-dashed border-border/80 p-4 text-sm leading-6 text-fg-muted">No outputs recorded for this job.</div>
           )}
         </section>
       </div>

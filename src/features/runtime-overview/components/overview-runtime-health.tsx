@@ -18,7 +18,7 @@ export function OverviewRuntimeHealth({ overview }: { overview: RuntimeOverviewS
     <section className="rounded-xl border border-border bg-surface/70 p-4">
       <div className="mb-4">
         <h3 className="font-[family-name:var(--font-bricolage)] text-lg font-semibold text-fg-strong">Runtime health</h3>
-        <p className="mt-2 text-sm leading-6 text-fg-muted">The operational heartbeat: install readiness, gateway state, live surfaces, doctor signal, and update drift.</p>
+        <p className="mt-2 text-sm leading-6 text-fg-muted">Core runtime status at a glance.</p>
       </div>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
         {overview.runtimeHealth.map((item) => (

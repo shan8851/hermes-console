@@ -1,83 +1,59 @@
 # Hermes Console
 
-Local-first web UI for Hermes Agent.
+A local-first visibility dashboard for [Hermes Agent](https://hermes-agent.nousresearch.com/).
 
-Hermes Console is a visibility-first interface for understanding what your Hermes setup is doing without digging through terminal output, files, or half-remembered commands.
+Hermes is powerful, but as your setup grows — sessions, cron jobs, skills, memory files, multiple agents — it gets hard to see what's going on without digging through the terminal. Hermes Console turns all of that into a single calm interface you can open in your browser.
 
-## Product shape
+## What it shows
 
-- Hermes-native
-- local-first
-- read-mostly at launch
-- visibility and legibility over chat parity
-- focused product, not a private ops dashboard
+- **Overview** — system health, gateway status, connected platforms, warnings, runtime configuration
+- **Sessions** — full session history with agent/source/platform filtering
+- **Cron** — scheduled jobs, run state, recent outputs, failure tracking
+- **Skills** — browsable skill library with categories, metadata, and linked files
+- **Memory** — MEMORY.md and USER.md with usage pressure indicators
+- **Files** — key Hermes configuration and context files with preview
 
-## Planned v1 surfaces
-
-- Overview
-- Sessions
-- Cron jobs and recent runs
-- Skills browser
-- Memory browser
-- Setup / inventory
-- Key file explorer for Hermes state and context files
-
-## Positioning
-
-Hermes Console makes your Hermes setup legible: sessions, cron jobs, skills, memory, config, and key files in one calm place.
-
-## Local setup
+## Quick start
 
 ```bash
+git clone https://github.com/giles-io/hermes-console.git
+cd hermes-console
 pnpm install
 cp .env.example .env.local
 pnpm dev
 ```
 
-Open `http://localhost:3000`.
+Open [http://localhost:3000](http://localhost:3000). Hermes Console will read your local Hermes state from `~/.hermes` automatically.
 
-## Environment
+## Configuration
 
-Hermes Console is designed to work against a normal Hermes install under `~/.hermes`.
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `HERMES_CONSOLE_HERMES_DIR` | `~/.hermes` | Hermes state root |
+| `HERMES_CONSOLE_WORKSPACE_DIR` | `~` | Workspace root for context files |
 
-Optional overrides:
-- `HERMES_CONSOLE_HERMES_DIR` — alternate Hermes state root
-- `HERMES_CONSOLE_WORKSPACE_DIR` — alternate workspace/context root for discovering high-signal project files
+Copy `.env.example` to `.env.local` to configure.
 
-Copy `.env.example` to `.env.local` if you want to set either of them.
+## Stack
 
-## Current discovery assumptions
+Next.js, React, TypeScript, Tailwind CSS. No database — reads Hermes state directly from disk.
 
-The first inventory pass is intentionally boring and explicit.
-
-Resolved roots:
-- Hermes root defaults to `~/.hermes`
-- workspace root defaults to your home directory
-- either path can be overridden via env
-
-Discovered agent roots:
-- default/root agent: `<hermesRoot>`
-- profile agents: `<hermesRoot>/profiles/*`
-
-Current availability checks look for:
-- `config.yaml`
-- `memories/`
-- `sessions/`
-- `cron/`
-- `skills/`
-- `state.db`
-
-Current installation states:
-- `missing` — resolved Hermes root does not exist
-- `partial` — Hermes root exists, but no discovered agent has meaningful runtime surfaces yet
-- `ready` — at least one discovered agent looks usable
-
-## Scripts
+## Development
 
 ```bash
-pnpm dev
-pnpm test
-pnpm lint
-pnpm build
+pnpm dev        # start dev server
+pnpm build      # production build
+pnpm test       # run tests
+pnpm lint       # lint
 ```
 
+## Design principles
+
+- **Read-only first** — observe and understand, don't control
+- **Local-first** — runs on localhost, reads local state, no SaaS dependency
+- **Calm over clever** — information-dense but breathable, not dashboard theatre
+- **Hermes-native** — built for real Hermes runtime surfaces, not abstract agent frameworks
+
+## License
+
+MIT

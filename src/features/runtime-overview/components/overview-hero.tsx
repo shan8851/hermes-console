@@ -17,10 +17,9 @@ export function OverviewHero({ overview }: { overview: RuntimeOverviewSummary })
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="max-w-3xl">
           <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-accent">Overview</p>
-          <h2 className="mt-3 font-[family-name:var(--font-bricolage)] text-2xl font-semibold tracking-tight text-fg-strong sm:text-3xl">
-            Is the bird&apos;s-eye view of this Hermes setup solid?
+          <h2 className="mt-3 font-[family-name:var(--font-bricolage)] text-xl font-semibold tracking-tight text-fg-strong sm:text-2xl">
+            {overview.verdict.summary}
           </h2>
-          <p className="mt-3 text-sm leading-7 text-fg-muted sm:text-[15px]">{overview.verdict.summary}</p>
           <p className="mt-3 text-xs text-fg-faint">
             Snapshot {overview.capturedAt ? new Date(overview.capturedAt).toLocaleString() : "time unknown"}
           </p>
