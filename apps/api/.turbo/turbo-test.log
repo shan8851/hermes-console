@@ -1,0 +1,22 @@
+
+
+> @hermes-console/api@0.1.0 test /home/shan/giles/hermes-console/apps/api
+> vitest run --passWithNoTests
+
+[?25l../../vitest.config.ts (2:29) [33m[UNRESOLVED_IMPORT] Warning:[0m Could not resolve 'vitest/config' in ../../vitest.config.ts
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../../vitest.config.ts:2:30 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m2 │[0m [38;5;249mi[0m[38;5;249mm[0m[38;5;249mp[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249m [0m[38;5;249m{[0m[38;5;249m [0m[38;5;249md[0m[38;5;249me[0m[38;5;249mf[0m[38;5;249mi[0m[38;5;249mn[0m[38;5;249me[0m[38;5;249mC[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249mf[0m[38;5;249mi[0m[38;5;249mg[0m[38;5;249m [0m[38;5;249m}[0m[38;5;249m [0m[38;5;249mf[0m[38;5;249mr[0m[38;5;249mo[0m[38;5;249mm[0m[38;5;249m [0m"vitest/config"[38;5;249m;[0m
+ [38;5;240m  │[0m                              ───────┬───────  
+ [38;5;240m  │[0m                                     ╰───────── Module not found, treating it as an external dependency
+[38;5;246m───╯[0m
+
+
+ RUN  v4.1.2 /home/shan/giles/hermes-console/apps/api
+
+No test files found, exiting with code 0
+
+include: src/**/*.test.ts, src/**/*.test.tsx
+exclude:  **/node_modules/**, **/.git/**
+
+[?25h

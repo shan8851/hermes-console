@@ -1,0 +1,12 @@
+
+
+> @hermes-console/api@0.1.0 lint /home/shan/giles/hermes-console/apps/api
+> eslint src
+
+[0m[0m
+[0m[4m/home/shan/giles/hermes-console/apps/api/src/features/runtime-overview/hermes-cli-diagnostics.ts[24m[0m
+[0m  [2m10:40[22m  [31merror[39m  Unexpected control character(s) in regular expression: \x1b  [2mno-control-regex[22m[0m
+[0m[0m
+[0m[31m[1m✖ 1 problem (1 error, 0 warnings)[22m[39m[0m
+[0m[31m[1m[22m[39m[0m
+[41m[30m ELIFECYCLE [39m[49m [31mCommand failed with exit code 1.[39m

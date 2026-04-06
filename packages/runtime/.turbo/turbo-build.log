@@ -1,0 +1,5 @@
+
+
+> @hermes-console/runtime@0.1.0 build /home/shan/giles/hermes-console/packages/runtime
+> tsc -p tsconfig.json
+

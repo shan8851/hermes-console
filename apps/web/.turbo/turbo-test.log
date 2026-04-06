@@ -1,0 +1,14 @@
+
+
+> @hermes-console/web@0.1.0 test /home/shan/giles/hermes-console/apps/web
+> vitest run --passWithNoTests
+
+[?25l
+ RUN  v4.1.2 /home/shan/giles/hermes-console/apps/web
+
+No test files found, exiting with code 0
+
+include: **/*.{test,spec}.?(c|m)[jt]s?(x)
+exclude:  **/node_modules/**, **/.git/**
+
+[?25h

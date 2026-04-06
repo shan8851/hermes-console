@@ -1,0 +1,26 @@
+
+
+> @hermes-console/runtime@0.1.0 test /home/shan/giles/hermes-console/packages/runtime
+> vitest run --config vitest.config.ts
+
+[?25l
+ RUN  v4.1.2 /home/shan/giles/hermes-console/packages/runtime
+
+[?2026h
+ ❯ src/runtime-overview/runtime-artifacts.test.ts [queued]
+
+ Test Files 0 passed (1)
+      Tests 0 passed (0)
+   Start at 18:05:51
+   Duration 0ms
+[?2026l[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K[1A[K ✓ src/runtime-overview/runtime-artifacts.test.ts (2 tests) 3ms
+   ✓ runtime-artifacts (2)
+     ✓ parses env assignments with export prefixes and quotes 1ms
+     ✓ summarizes connected gateway platforms 1ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  18:05:51
+   Duration  118ms (transform 20ms, setup 0ms, import 29ms, tests 3ms, environment 0ms)
+
+[?25h

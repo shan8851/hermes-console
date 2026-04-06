@@ -1,7 +1,12 @@
 # AGENTS.md — Hermes Console
 
 ## What this is
-Hermes Console is a local-first Next.js web app for inspecting Hermes Agent setups.
+Hermes Console is a local-first monorepo for inspecting Hermes Agent setups.
+
+Current workspace shape:
+- `packages/runtime` for pure schemas, types, and domain helpers
+- `apps/api` for filesystem reads, CLI diagnostics, and the local HTTP boundary
+- `apps/web` for the Vite React UI
 
 It is:
 - Hermes-native
@@ -29,7 +34,8 @@ Do not let the repo drift into:
 
 ## Code structure expectations
 - Prefer small composable components over giant page files.
-- Keep reader/parsing logic out of UI components.
+- Keep reader/parsing logic in `apps/api` or `packages/runtime`, never in `apps/web`.
+- Keep `packages/runtime` pure and framework-agnostic.
 - Create explicit internal types for each source family.
 - Prefer strong names that explain intent: `CronJobsTable`, `readSkillsIndex`, `formatMemoryUsage`.
 - Keep file and folder structure obvious and domain-led.
@@ -50,6 +56,7 @@ Expect `.env.local` for local overrides.
 Planned important env vars:
 - `HERMES_CONSOLE_HERMES_DIR`
 - `HERMES_CONSOLE_WORKSPACE_DIR`
+- `PORT`
 
 Default assumption is a standard Hermes setup under `~/.hermes`.
 
