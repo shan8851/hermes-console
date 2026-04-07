@@ -1,89 +1,40 @@
+<div align="center">
+
 # Hermes Console
 
-A local-first dashboard for inspecting a real Hermes Agent setup without living in the terminal.
+**A local-first dashboard for your Hermes Agent setup.**
 
-Hermes Console is now a small monorepo:
+Point it at `~/.hermes`. See what's running, what's scheduled, what's stored, and what needs attention.
 
-- `packages/runtime` holds pure types, schemas, and domain helpers
-- `apps/api` owns filesystem reads, Hermes CLI diagnostics, and the local HTTP boundary
-- `apps/web` is a Vite React app with TanStack Router and React Query
+[![Hermes Console tour](./apps/web/public/readme/hermes-console-tour.gif)](./apps/web/public/readme/hermes-console-tour.gif)
 
-The product stays read-mostly and Hermes-native. The API runs on `127.0.0.1`, reads Hermes state directly from disk per request, and serves the built web app on the same origin in production.
+</div>
 
-## Screenshots
+---
 
-### Tour
+## What it is
 
-![Hermes Console tour](./apps/web/public/readme/hermes-console-tour.gif)
+A read-only web UI that inspects your local Hermes state directly from disk. No cloud, no auth, no external services — just your files and a browser.
 
-### Overview
+**Surfaces:**
+- **Overview** — runtime health, gateway state, connected platforms, warnings, update drift
+- **Sessions** — recent Hermes runs across agents with filtering and search
+- **Cron** — scheduled job status, recent outputs, health indicators
+- **Skills** — installed skills, categories, linked files, detail views
+- **Memory** — `MEMORY.md` / `USER.md` visibility with pressure indicators
+- **Files** — high-signal config and instruction file previews
+- **Usage** — token counts and estimated cost breakdowns
 
-![Hermes Console overview](./apps/web/public/readme/overview.png)
+## What it isn't
 
-### Sessions
+- Not a chat client
+- Not a terminal replacement
+- Not a hosted SaaS
+- Not a generic multi-agent platform
 
-![Hermes Console sessions](./apps/web/public/readme/sessions.png)
+## Why use it
 
-### Cron
-
-![Hermes Console cron](./apps/web/public/readme/cron.png)
-
-### Skills
-
-![Hermes Console skills](./apps/web/public/readme/skills.png)
-
-### Memory
-
-![Hermes Console memory](./apps/web/public/readme/memory.png)
-
-### Usage
-
-![Hermes Console usage](./apps/web/public/readme/usage.png)
-
-### Files
-
-![Hermes Console files](./apps/web/public/readme/files.png)
-
-## What you get
-
-- **Overview** for runtime health, gateway state, connected platforms, warnings, and drift
-- **Sessions** for browsing recent Hermes runs across agents
-- **Cron** for job status, recent outputs, and detail drill-in
-- **Skills** for installed skills, summaries, linked files, and detail views
-- **Memory** for `MEMORY.md` and `USER.md` visibility with pressure indicators
-- **Files** for high-signal config and context file previews
-- **Usage** for token and estimated cost summaries from local session data
-
-## Architecture
-
-### `packages/runtime`
-
-Pure TypeScript only:
-
-- zod schemas
-- shared API envelope types
-- inventory and overview domain types
-- pure normalizers and composition helpers
-
-No filesystem access, no HTTP server code, no React.
-
-### `apps/api`
-
-Local Node service built with Hono:
-
-- resolves Hermes paths and env overrides
-- reads Hermes files and CLI diagnostics
-- exposes `/api/*` endpoints
-- serves `apps/web/dist` in production
-
-### `apps/web`
-
-Vite React app:
-
-- TanStack Router route tree
-- TanStack Query for cached server state and refresh flows
-- route-level pending/error handling
-- focused page components for overview, sessions, cron, skills, memory, files, and usage
+If you run Hermes locally and want to understand your setup without digging through files and CLI output — this does that. One screen, live data, calm UX, no theatre.
 
 ## Quick start
 
@@ -95,59 +46,43 @@ cp .env.example .env.local
 pnpm dev
 ```
 
-Then open the local Vite URL printed by `pnpm dev` — usually [http://127.0.0.1:5173](http://127.0.0.1:5173), but Vite will pick the next free port if 5173 is already taken.
+Open the URL Vite prints (default `http://localhost:5173`).
 
-You should also see the API log its listening address, for example:
-
-```text
-[api] listening on http://127.0.0.1:3940
-```
-
-For a production-style local run:
+For a production build:
 
 ```bash
-pnpm build
-pnpm start
+pnpm build && pnpm start
 ```
-
-Then open [http://127.0.0.1:3940](http://127.0.0.1:3940).
 
 ## Configuration
 
 Copy `.env.example` to `.env.local` and adjust as needed.
 
-| Variable                       | Default     | Description                                                  |
-| ------------------------------ | ----------- | ------------------------------------------------------------ |
-| `HERMES_CONSOLE_HERMES_DIR`    | `~/.hermes` | Hermes state root                                            |
-| `HERMES_CONSOLE_WORKSPACE_DIR` | unset       | Optional workspace root for extra high-signal file discovery |
-| `HERMES_CONSOLE_HERMES_BIN`    | `hermes`    | Optional Hermes CLI path override for runtime diagnostics    |
-| `PORT`                         | `3940`      | Local API port used by the API and the web dev proxy         |
+| Variable                       | Default     | Description                          |
+| ------------------------------ | ----------- | ------------------------------------ |
+| `HERMES_CONSOLE_HERMES_DIR`    | `~/.hermes` | Hermes state root                    |
+| `HERMES_CONSOLE_WORKSPACE_DIR` | unset       | Extra workspace root for file discovery |
+| `HERMES_CONSOLE_HERMES_BIN`    | `hermes`    | Hermes CLI path override             |
+| `PORT`                         | `3940`      | API port                             |
 
-## Development
+## Screenshots
 
-```bash
-pnpm dev
-pnpm build
-pnpm start
-pnpm test
-pnpm typecheck
-pnpm lint
-```
+<p align="center">
+  <img src="./apps/web/public/readme/overview.png" width="45%" alt="Overview" />
+  <img src="./apps/web/public/readme/sessions.png" width="45%" alt="Sessions" />
+</p>
+<p align="center">
+  <img src="./apps/web/public/readme/cron.png" width="45%" alt="Cron" />
+  <img src="./apps/web/public/readme/skills.png" width="45%" alt="Skills" />
+</p>
+<p align="center">
+  <img src="./apps/web/public/readme/usage.png" width="45%" alt="Usage" />
+  <img src="./apps/web/public/readme/files.png" width="45%" alt="Files" />
+</p>
 
-`pnpm dev` starts:
+## Contributing
 
-- a runtime package watcher
-- the local API on `127.0.0.1:3940`
-- the Vite app on `127.0.0.1:5173`
-
-The web app reads the same root `.env.local` during development, so if you set `PORT`, the Vite `/api` proxy follows it automatically.
-
-## Product stance
-
-- **Read-mostly**: visibility first, mutation later
-- **Local-first**: everything runs against local Hermes state
-- **Calm operator UX**: dense signal without dashboard theatre
-- **Hermes-native**: built around Hermes files, sessions, cron, and memory rather than generic agent abstractions
+Found a bug? Have a feature idea? Open an issue or PR. Feedback welcome.
 
 ## License
 
