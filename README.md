@@ -12,13 +12,37 @@ The product stays read-mostly and Hermes-native. The API runs on `127.0.0.1`, re
 
 ## Screenshots
 
+### Tour
+
+![Hermes Console tour](./apps/web/public/readme/hermes-console-tour.gif)
+
 ### Overview
 
-![Hermes Console overview placeholder](./apps/web/public/readme/overview-placeholder.png)
+![Hermes Console overview](./apps/web/public/readme/overview.png)
 
 ### Sessions
 
-![Hermes Console sessions placeholder](./apps/web/public/readme/sessions-placeholder.png)
+![Hermes Console sessions](./apps/web/public/readme/sessions.png)
+
+### Cron
+
+![Hermes Console cron](./apps/web/public/readme/cron.png)
+
+### Skills
+
+![Hermes Console skills](./apps/web/public/readme/skills.png)
+
+### Memory
+
+![Hermes Console memory](./apps/web/public/readme/memory.png)
+
+### Usage
+
+![Hermes Console usage](./apps/web/public/readme/usage.png)
+
+### Files
+
+![Hermes Console files](./apps/web/public/readme/files.png)
 
 ## What you get
 
