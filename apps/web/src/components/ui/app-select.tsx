@@ -10,12 +10,14 @@ export function AppSelect({
   value,
   onChange,
   options,
-  ariaLabel
+  ariaLabel,
+  className
 }: {
   value: string;
   onChange: (value: string) => void;
   options: AppSelectOption[];
   ariaLabel: string;
+  className?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -46,14 +48,14 @@ export function AppSelect({
   }, [isOpen]);
 
   return (
-    <div ref={containerRef} className="relative min-w-0">
+    <div ref={containerRef} className={['relative min-w-0', className ?? ''].join(' ')}>
       <button
         type="button"
         aria-label={ariaLabel}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         onClick={() => setIsOpen((previous) => !previous)}
-        className="flex w-full items-center justify-between gap-2 rounded-md border border-border bg-surface/70 px-3 py-2 text-left text-sm text-fg outline-none transition-colors hover:border-accent/40 focus:border-accent/60"
+        className="flex w-full items-center justify-between gap-2 rounded-xl border border-border/70 bg-surface/65 px-3 py-2.5 text-left text-sm text-fg-strong outline-none transition-colors hover:border-accent/35 focus:border-accent/50"
       >
         <span className="truncate">{selectedLabel}</span>
         <ChevronDown
@@ -65,7 +67,7 @@ export function AppSelect({
         <ul
           role="listbox"
           aria-label={ariaLabel}
-          className="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-md border border-border bg-surface py-1 shadow-lg shadow-black/40"
+          className="absolute z-30 mt-2 max-h-60 w-full overflow-auto rounded-xl border border-border/70 bg-surface/95 py-1 shadow-lg shadow-black/40"
         >
           {options.map((option) => {
             const isSelected = option.value === value;

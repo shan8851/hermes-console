@@ -1,5 +1,5 @@
-import { Link } from '@tanstack/react-router';
-
+import { AppBreadcrumbs } from '@/components/ui/app-breadcrumbs';
+import { CopyButton } from '@/components/ui/copy-button';
 import type { HermesCronJobDetail } from '@hermes-console/runtime';
 
 function formatTimestamp(value: string | null) {
@@ -29,15 +29,7 @@ export function CronDetailView({ detail }: { detail: HermesCronJobDetail }) {
   return (
     <div className="space-y-8">
       <section className="max-w-4xl">
-        <div className="mb-4">
-          <Link
-            to="/cron"
-            className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-bg/40 px-3 py-1.5 font-mono text-xs text-fg-muted transition-colors hover:border-accent/60 hover:text-fg"
-          >
-            <span aria-hidden="true">←</span>
-            <span>Back to cron</span>
-          </Link>
-        </div>
+        <AppBreadcrumbs items={[{ label: 'Cron', to: '/cron' }, { label: job.name }]} />
         <div className="flex flex-wrap items-center gap-3">
           <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">Cron</p>
           <span className="rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.16em] text-accent">
@@ -93,7 +85,10 @@ export function CronDetailView({ detail }: { detail: HermesCronJobDetail }) {
           <div className="mt-4 space-y-3 text-sm text-fg-muted">
             <div>
               <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-faint">job id</p>
-              <p className="mt-1 break-all font-mono text-xs text-fg">{job.jobId}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <p className="break-all font-mono text-xs text-fg">{job.jobId}</p>
+                <CopyButton ariaLabel="Copy cron job id" value={job.jobId} />
+              </div>
             </div>
             <div>
               <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-faint">delivery</p>

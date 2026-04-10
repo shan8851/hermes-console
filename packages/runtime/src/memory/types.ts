@@ -48,6 +48,18 @@ export type MemoryReadResult = {
   };
 };
 
+export type AgentMemoryReadResult = MemoryReadResult & {
+  agentId: string;
+  agentLabel: string;
+  agentSource: 'root' | 'profile';
+};
+
+export type HermesMemoryIndex = {
+  agents: AgentMemoryReadResult[];
+  agentCount: number;
+  agentsWithMemory: number;
+};
+
 export const memoryScopeSchema = z.enum(['memory', 'user']);
 export const memoryLimitSourceSchema = z.enum(['config', 'default']);
 export const memoryReadStatusSchema = z.enum(['ready', 'partial', 'missing']);
@@ -91,4 +103,16 @@ export const memoryReadResultSchema = z.object({
     memory: memoryFileSummarySchema,
     user: memoryFileSummarySchema
   })
+});
+
+export const agentMemoryReadResultSchema = memoryReadResultSchema.extend({
+  agentId: z.string(),
+  agentLabel: z.string(),
+  agentSource: z.enum(['root', 'profile'])
+});
+
+export const hermesMemoryIndexSchema = z.object({
+  agents: z.array(agentMemoryReadResultSchema),
+  agentCount: z.number(),
+  agentsWithMemory: z.number()
 });

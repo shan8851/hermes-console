@@ -14,9 +14,9 @@ const renderTopbar = () => {
   });
 
   render(
-    <QueryClientProvider client={queryClient}>
-      <AppTopbar />
-    </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <AppTopbar onOpenCommandPalette={vi.fn()} />
+      </QueryClientProvider>
   );
 };
 

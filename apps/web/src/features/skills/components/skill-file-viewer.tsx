@@ -1,4 +1,3 @@
-import { Link } from '@tanstack/react-router';
 import type {
   HermesQueryIssue,
   HermesQueryStatus,
@@ -7,9 +6,13 @@ import type {
   SnapshotEnvelope
 } from '@hermes-console/runtime';
 
+import { AppBreadcrumbs } from '@/components/ui/app-breadcrumbs';
+import { CopyButton } from '@/components/ui/copy-button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { QueryStatusCard } from '@/components/ui/query-status-card';
 import { LinkedFileKindBadge } from '@/features/skills/components/linked-file-kind-badge';
 import { SkillParseBadge } from '@/features/skills/components/skill-parse-badge';
+import { Link } from '@tanstack/react-router';
 
 function createViewerLink({ skillId, file }: { skillId: string; file: string }) {
   return {
@@ -62,15 +65,7 @@ export function SkillFileViewer({
     <div className="space-y-8">
       <QueryStatusCard title="Skill detail quality" status={detailStatus} issues={detailIssues} />
       <section className="max-w-3xl">
-        <div className="mb-4">
-          <Link
-            to="/skills"
-            className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-bg/40 px-3 py-1.5 font-mono text-xs text-fg-muted transition-colors hover:border-accent/60 hover:text-fg"
-          >
-            <span aria-hidden="true">←</span>
-            <span>Back to skills</span>
-          </Link>
-        </div>
+        <AppBreadcrumbs items={[{ label: 'Skills', to: '/skills' }, { label: detail.summary.name }]} />
         <div className="flex flex-wrap items-center gap-3">
           <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">Skills</p>
           <SkillParseBadge status={detail.summary.parseStatus} />
@@ -79,6 +74,10 @@ export function SkillFileViewer({
           {detail.summary.name}
         </h2>
         <p className="mt-3 text-sm leading-7 text-fg-muted">{detail.summary.description}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <p className="break-all font-mono text-xs text-fg-muted">{detail.summary.skillPath}</p>
+          <CopyButton ariaLabel="Copy skill file path" value={detail.summary.skillPath} />
+        </div>
         <div className="mt-4 flex flex-wrap gap-2 text-xs text-fg-muted">
           <span className="rounded-full border border-border/80 bg-bg/40 px-3 py-1 font-mono">
             category {detail.summary.category}
@@ -147,6 +146,12 @@ export function SkillFileViewer({
               <LinkedFileKindBadge kind={selectedLinkedFile.data.file.kind} />
             ) : null}
           </div>
+          {effectiveSelectedFileId !== 'skill' && selectedLinkedFile?.data.file ? (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <p className="break-all font-mono text-xs text-fg-muted">{selectedLinkedFile.data.file.absolutePath}</p>
+              <CopyButton ariaLabel="Copy linked file path" value={selectedLinkedFile.data.file.absolutePath} />
+            </div>
+          ) : null}
           {effectiveSelectedFileId !== 'skill' && selectedLinkedFile ? (
             <QueryStatusCard
               title="Linked file quality"
@@ -155,8 +160,13 @@ export function SkillFileViewer({
             />
           ) : null}
           {selectedLinkedFileError ? (
-            <div className="mt-4 rounded-md border border-rose-500/30 bg-rose-500/10 p-4 text-sm leading-6 text-rose-100">
-              {selectedLinkedFileError}
+            <div className="mt-4">
+              <EmptyState
+                eyebrow="Unreadable"
+                title="This linked file could not be loaded"
+                description={selectedLinkedFileError}
+                tone="danger"
+              />
             </div>
           ) : (
             <pre className="mt-4 max-h-[56rem] overflow-auto whitespace-pre-wrap break-words text-sm leading-6 text-fg">

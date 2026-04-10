@@ -1,5 +1,8 @@
+import { readFileSync } from 'node:fs';
+
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
+import { z } from 'zod';
 
 import type { ServerConfig } from '@/config';
 import { readHermesCronDetail } from '@/features/cron/read-cron-detail';
@@ -26,6 +29,23 @@ const logUnexpectedServerError = (error: unknown): void => {
   console.error('[hermes-console] unexpected server error', error);
 };
 
+const appPackageSchema = z.object({
+  version: z.string()
+});
+
+const readAppVersion = (): string | undefined => {
+  try {
+    const packageContent = readFileSync(new URL('../../../package.json', import.meta.url), 'utf8');
+    const parsedPackage = appPackageSchema.parse(JSON.parse(packageContent) as unknown);
+
+    return parsedPackage.version;
+  } catch {
+    return undefined;
+  }
+};
+
+const appVersion = readAppVersion();
+
 const createAppMeta = (): AppMeta => {
   const shellStatus = readShellStatusQuery();
 
@@ -37,7 +57,8 @@ const createAppMeta = (): AppMeta => {
     rootKind: shellStatus.data.rootKind,
     rootPath: shellStatus.data.rootPath,
     updateBehind: shellStatus.data.updateBehind,
-    updateStatus: shellStatus.data.updateStatus
+    updateStatus: shellStatus.data.updateStatus,
+    version: appVersion
   };
 };
 

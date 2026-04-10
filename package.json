@@ -1,6 +1,6 @@
 {
   "name": "hermes-console",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "packageManager": "pnpm@10.23.0",
   "scripts": {
@@ -8,6 +8,7 @@
     "build": "pnpm --filter @hermes-console/runtime build && pnpm --filter @hermes-console/api build && pnpm --filter @hermes-console/web build",
     "start": "pnpm --filter @hermes-console/api start",
     "lint": "pnpm -r lint",
+    "release:check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "pnpm --filter @hermes-console/runtime build && pnpm -r typecheck",

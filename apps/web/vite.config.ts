@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 
 import tailwindcss from '@tailwindcss/vite';
@@ -6,6 +7,14 @@ import { defineConfig, loadEnv } from 'vite';
 
 const defaultApiPort = 3940;
 const repoRoot = path.resolve(__dirname, '../..');
+
+const readAppVersion = (): string => {
+  const packagePath = path.join(repoRoot, 'package.json');
+  const packageContent = fs.readFileSync(packagePath, 'utf8');
+  const parsedPackage = JSON.parse(packageContent) as { version?: unknown };
+
+  return typeof parsedPackage.version === 'string' ? parsedPackage.version : '0.0.0';
+};
 
 const readApiPort = (rawPort: string | undefined): number => {
   if (rawPort == null || rawPort === '') {
@@ -30,6 +39,9 @@ export default defineConfig(({ mode }) => {
   const apiPort = readApiPort(environment.PORT);
 
   return {
+    define: {
+      'globalThis.__APP_VERSION__': JSON.stringify(readAppVersion())
+    },
     envDir: repoRoot,
     plugins: [react(), tailwindcss()],
     resolve: {

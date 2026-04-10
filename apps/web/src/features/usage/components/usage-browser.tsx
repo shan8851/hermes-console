@@ -1,8 +1,16 @@
 import type { QueryKey } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
+import { AppSelect } from '@/components/ui/app-select';
+import { EmptyState } from '@/components/ui/empty-state';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import type { HermesUsageSummary, UsageBreakdownRow, UsageWindowId } from '@hermes-console/runtime';
+import {
+  summarizeUsageWindow,
+  type HermesUsageSummary,
+  type UsageBreakdownRow,
+  type UsageWindowSummary,
+  type UsageWindowId
+} from '@hermes-console/runtime';
 
 function formatInteger(value: number) {
   return new Intl.NumberFormat().format(value);
@@ -79,29 +87,83 @@ function BreakdownTable({
   );
 }
 
-export function UsageBrowser({ refreshQueryKeys, usage }: { refreshQueryKeys: QueryKey[]; usage: HermesUsageSummary }) {
-  const [windowId, setWindowId] = useState<UsageWindowId>('7d');
+function createAgentOptions(usage: HermesUsageSummary) {
+  return [
+    {
+      value: 'all',
+      label: 'All agents'
+    },
+    ...usage.agents.map((agent) => ({
+      value: agent.id,
+      label: agent.label
+    }))
+  ];
+}
 
-  const current = useMemo(
-    () => usage.windows.find((window) => window.id === windowId) ?? usage.windows[0],
-    [usage.windows, windowId]
-  );
-
-  if (!current) {
-    return (
-      <section className="rounded-lg border border-border bg-surface/70 p-4">
-        <div className="rounded-md border border-dashed border-border/80 p-4 text-sm leading-6 text-fg-muted">
-          No usage windows were available in the current response.
-        </div>
-      </section>
-    );
+function getCurrentUsageWindow({
+  now,
+  records,
+  usage,
+  windowId
+}: {
+  now: Date;
+  records: HermesUsageSummary['records'];
+  usage: HermesUsageSummary;
+  windowId: UsageWindowId;
+}): UsageWindowSummary {
+  if (records.length > 0) {
+    return summarizeUsageWindow({
+      records,
+      windowId,
+      now
+    });
   }
 
+  const matchingWindow = usage.windows.find((window) => window.id === windowId);
+
+  if (matchingWindow) {
+    return matchingWindow;
+  }
+
+  return summarizeUsageWindow({
+    records: [],
+    windowId,
+    now
+  });
+}
+
+export function UsageBrowser({ refreshQueryKeys, usage }: { refreshQueryKeys: QueryKey[]; usage: HermesUsageSummary }) {
+  const [windowId, setWindowId] = useState<UsageWindowId>(
+    usage.availableWindows[1] ?? usage.availableWindows[0] ?? '7d'
+  );
+  const [agentId, setAgentId] = useState('all');
+  const filteredRecords = useMemo(
+    () => (agentId === 'all' ? usage.records : usage.records.filter((record) => record.agentId === agentId)),
+    [agentId, usage.records]
+  );
+  const usageWindowTimestamp = useMemo(() => new Date(usage.loadedAt), [usage.loadedAt]);
+  const current = useMemo(
+    () =>
+      getCurrentUsageWindow({
+        now: usageWindowTimestamp,
+        records: filteredRecords,
+        usage,
+        windowId
+      }),
+    [filteredRecords, usage, usageWindowTimestamp, windowId]
+  );
+  const hasActiveFilters = agentId !== 'all';
+  const selectedAgentLabel = usage.agents.find((agent) => agent.id === agentId)?.label ?? agentId;
+  const representedAgentCount =
+    filteredRecords.length > 0 ? new Set(filteredRecords.map((record) => record.agentId)).size : current.byAgent.length;
   const summaryItems = [
     {
       label: 'total tokens',
       value: formatInteger(current.totalTokens),
-      detail: `${formatInteger(current.sessionCount)} sessions in the selected window.`
+      detail:
+        agentId === 'all'
+          ? `${formatInteger(current.sessionCount)} sessions in the selected window.`
+          : `${formatInteger(current.sessionCount)} sessions for ${selectedAgentLabel} in this window.`
     },
     {
       label: 'estimated cost',
@@ -116,14 +178,11 @@ export function UsageBrowser({ refreshQueryKeys, usage }: { refreshQueryKeys: Qu
         : 'No model usage recorded in this window.'
     },
     {
-      label: 'top agent',
-      value: current.topAgent?.label ?? '—',
-      detail: current.topAgent
-        ? `${formatInteger(current.topAgent.totalTokens)} tokens`
-        : 'No agent usage recorded in this window.'
+      label: 'agents represented',
+      value: formatInteger(representedAgentCount),
+      detail: agentId === 'all' ? 'Agents with usage in the current view.' : 'A filtered view is focused on one agent.'
     }
   ];
-
   const tokenBreakdown = [
     { label: 'input', value: formatInteger(current.inputTokens) },
     { label: 'output', value: formatInteger(current.outputTokens) },
@@ -134,7 +193,7 @@ export function UsageBrowser({ refreshQueryKeys, usage }: { refreshQueryKeys: Qu
 
   return (
     <div className="space-y-8">
-      <section className="max-w-4xl">
+      <section>
         <div className="flex flex-wrap items-center gap-3">
           <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">Usage</p>
           <RefreshButton loadedAt={usage.loadedAt} queryKeys={refreshQueryKeys} />
@@ -142,66 +201,110 @@ export function UsageBrowser({ refreshQueryKeys, usage }: { refreshQueryKeys: Qu
         <h2 className="mt-3 font-[family-name:var(--font-bricolage)] text-xl font-semibold tracking-tight text-fg-strong sm:text-2xl">
           Token usage and estimated cost
         </h2>
-        <p className="mt-3 text-sm leading-7 text-fg-muted">
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-fg-muted">
           Usage read from Hermes session storage and grouped into 1 day, 7 day, and 30 day views.
         </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {usage.availableWindows.map((id) => {
-            const active = id === current.id;
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setWindowId(id)}
-                className={[
-                  'rounded-md border px-3 py-1.5 text-sm transition-colors',
-                  active
-                    ? 'border-accent/50 bg-accent/10 text-accent'
-                    : 'border-border/80 bg-bg/40 text-fg-muted hover:text-fg'
-                ].join(' ')}
-              >
-                {id}
-              </button>
-            );
-          })}
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap gap-2">
+            {usage.availableWindows.map((id) => {
+              const active = id === current.id;
+
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setWindowId(id)}
+                  className={[
+                    'rounded-xl border px-3 py-2 text-sm transition-colors',
+                    active
+                      ? 'border-accent/50 bg-accent/10 text-accent'
+                      : 'border-border/70 bg-bg/35 text-fg-muted hover:text-fg'
+                  ].join(' ')}
+                >
+                  {id}
+                </button>
+              );
+            })}
+          </div>
+          <AppSelect
+            value={agentId}
+            onChange={setAgentId}
+            options={createAgentOptions(usage)}
+            ariaLabel="Filter usage by agent"
+            className="min-w-[11.5rem] flex-[0_1_12rem]"
+          />
+          {hasActiveFilters ? (
+            <button
+              type="button"
+              onClick={() => setAgentId('all')}
+              className="rounded-xl border border-border/70 bg-bg/35 px-3 py-2.5 text-sm text-fg-muted transition-colors hover:border-accent/35 hover:text-fg"
+            >
+              Clear filters
+            </button>
+          ) : null}
         </div>
       </section>
 
       <UsageSummaryGrid items={summaryItems} />
 
-      <section className="rounded-lg border border-border bg-surface/70 p-4">
-        <div className="mb-4">
-          <h3 className="font-[family-name:var(--font-bricolage)] text-base font-semibold text-fg-strong">
-            Token breakdown
-          </h3>
-          <p className="mt-2 text-sm leading-6 text-fg-muted">
-            Input, output, cache, and reasoning tokens for the selected window.
-          </p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-          {tokenBreakdown.map((item) => (
-            <article key={item.label} className="rounded-md border border-border/70 bg-bg/40 p-4">
-              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-faint">{item.label}</p>
-              <p className="mt-2 font-[family-name:var(--font-bricolage)] text-2xl font-semibold tracking-tight text-fg-strong">
-                {item.value}
+      {current.sessionCount === 0 ? (
+        <EmptyState
+          eyebrow="No usage"
+          title="No usage landed in this window"
+          description={
+            hasActiveFilters
+              ? `There were no usage records for ${selectedAgentLabel} in the selected time window.`
+              : 'There were no usage records in the selected time window.'
+          }
+          action={
+            hasActiveFilters ? (
+              <button
+                type="button"
+                onClick={() => setAgentId('all')}
+                className="rounded-md border border-border/80 bg-bg/40 px-3 py-1.5 text-xs text-fg-muted transition-colors hover:border-accent/40 hover:text-fg"
+              >
+                Reset filters
+              </button>
+            ) : null
+          }
+        />
+      ) : (
+        <>
+          <section className="rounded-lg border border-border bg-surface/70 p-4">
+            <div className="mb-4">
+              <h3 className="font-[family-name:var(--font-bricolage)] text-base font-semibold text-fg-strong">
+                Token breakdown
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-fg-muted">
+                Input, output, cache, and reasoning tokens for the selected window.
               </p>
-            </article>
-          ))}
-        </div>
-      </section>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+              {tokenBreakdown.map((item) => (
+                <article key={item.label} className="rounded-md border border-border/70 bg-bg/40 p-4">
+                  <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-faint">{item.label}</p>
+                  <p className="mt-2 font-[family-name:var(--font-bricolage)] text-2xl font-semibold tracking-tight text-fg-strong">
+                    {item.value}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </section>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <BreakdownTable
-          title="By model"
-          description="Which models are driving token usage in the selected window."
-          rows={current.byModel}
-        />
-        <BreakdownTable
-          title="By agent"
-          description="How usage is split across the default agent and any profile agents."
-          rows={current.byAgent}
-        />
-      </div>
+          <div className="grid gap-6 xl:grid-cols-2">
+            <BreakdownTable
+              title="By model"
+              description="Which models are driving token usage in the selected window."
+              rows={current.byModel}
+            />
+            <BreakdownTable
+              title="By agent"
+              description="How usage is split across the default agent and any profile agents."
+              rows={current.byAgent}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

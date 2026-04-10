@@ -2,7 +2,9 @@ import type { QueryKey } from '@tanstack/react-query';
 import { useDeferredValue, useMemo, useState } from 'react';
 
 import { AppSelect } from '@/components/ui/app-select';
+import { EmptyState } from '@/components/ui/empty-state';
 import { RefreshButton } from '@/components/ui/refresh-button';
+import { SearchInput } from '@/components/ui/search-input';
 import { CronIndex } from '@/features/cron/components/cron-index';
 import { CronSummaryGrid } from '@/features/cron/components/cron-summary-grid';
 import type { HermesCronJobSummary } from '@hermes-console/runtime';
@@ -77,6 +79,7 @@ export function CronBrowser({
     uniqueValues(jobs.map((job) => job.lastStatus ?? job.state ?? 'unknown')),
     'All states'
   );
+  const hasActiveFilters = query.trim().length > 0 || agent !== 'all' || status !== 'all';
 
   const summaryItems = [
     {
@@ -112,7 +115,7 @@ export function CronBrowser({
 
   return (
     <div className="space-y-8">
-      <section className="max-w-4xl">
+      <section>
         <div className="flex flex-wrap items-center gap-3">
           <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">Cron</p>
           <RefreshButton loadedAt={loadedAt} queryKeys={refreshQueryKeys} />
@@ -120,29 +123,71 @@ export function CronBrowser({
         <h2 className="mt-3 font-[family-name:var(--font-bricolage)] text-xl font-semibold tracking-tight text-fg-strong sm:text-2xl">
           Scheduled Jobs
         </h2>
-        <p className="mt-3 text-sm leading-7 text-fg-muted">
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-fg-muted">
           Scheduled jobs across agents, with run state and recent output.
         </p>
-        <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1.8fr)_repeat(2,minmax(0,1fr))]">
-          <input
-            type="text"
+        <div className="mt-4 flex flex-wrap items-stretch gap-3">
+          <SearchInput
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={setQuery}
             placeholder="Search jobs, schedules, delivery targets, and job ids"
-            className="min-w-0 w-full rounded-md border border-border bg-surface/70 px-3 py-2 text-sm text-fg outline-none placeholder:text-fg-muted"
+            className="min-w-[18rem] flex-[2.2_1_28rem]"
           />
-          <AppSelect value={agent} onChange={setAgent} options={agentOptions} ariaLabel="Filter cron jobs by agent" />
+          <AppSelect
+            value={agent}
+            onChange={setAgent}
+            options={agentOptions}
+            ariaLabel="Filter cron jobs by agent"
+            className="min-w-[11.5rem] flex-[0_1_12rem]"
+          />
           <AppSelect
             value={status}
             onChange={setStatus}
             options={statusOptions}
             ariaLabel="Filter cron jobs by state"
+            className="min-w-[11.5rem] flex-[0_1_12rem]"
           />
+          {hasActiveFilters ? (
+            <button
+              type="button"
+              onClick={() => {
+                setQuery('');
+                setAgent('all');
+                setStatus('all');
+              }}
+              className="rounded-xl border border-border/70 bg-bg/35 px-3 py-2.5 text-sm text-fg-muted transition-colors hover:border-accent/35 hover:text-fg"
+            >
+              Clear filters
+            </button>
+          ) : null}
         </div>
       </section>
 
       <CronSummaryGrid items={summaryItems} />
-      <CronIndex jobs={filteredJobs} />
+      {filteredJobs.length === 0 ? (
+        <EmptyState
+          eyebrow="No matches"
+          title="No cron jobs matched these filters"
+          description="Try a different search, agent, or job state."
+          action={
+            hasActiveFilters ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setQuery('');
+                  setAgent('all');
+                  setStatus('all');
+                }}
+                className="rounded-md border border-border/80 bg-bg/40 px-3 py-1.5 text-xs text-fg-muted transition-colors hover:border-accent/40 hover:text-fg"
+              >
+                Reset filters
+              </button>
+            ) : null
+          }
+        />
+      ) : (
+        <CronIndex jobs={filteredJobs} />
+      )}
     </div>
   );
 }

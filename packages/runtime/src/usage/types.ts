@@ -32,6 +32,11 @@ export type UsageBreakdownRow = {
   estimatedCostUsd: number;
 };
 
+export type UsageAgentSummary = {
+  id: string;
+  label: string;
+};
+
 export type UsageWindowSummary = {
   id: UsageWindowId;
   label: string;
@@ -52,6 +57,8 @@ export type UsageWindowSummary = {
 
 export type HermesUsageSummary = {
   loadedAt: string;
+  agents: UsageAgentSummary[];
+  records: UsageSessionRecord[];
   windows: UsageWindowSummary[];
   availableWindows: UsageWindowId[];
 };
@@ -88,6 +95,11 @@ export const usageBreakdownRowSchema = z.object({
   estimatedCostUsd: z.number()
 });
 
+export const usageAgentSummarySchema = z.object({
+  id: z.string(),
+  label: z.string()
+});
+
 export const usageWindowSummarySchema = z.object({
   id: usageWindowIdSchema,
   label: z.string(),
@@ -108,6 +120,8 @@ export const usageWindowSummarySchema = z.object({
 
 export const hermesUsageSummarySchema = z.object({
   loadedAt: z.string(),
+  agents: z.array(usageAgentSummarySchema),
+  records: z.array(usageSessionRecordSchema),
   windows: z.array(usageWindowSummarySchema),
   availableWindows: z.array(usageWindowIdSchema)
 });

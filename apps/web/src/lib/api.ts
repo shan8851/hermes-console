@@ -3,6 +3,7 @@ import {
   appMetaSchema,
   createSnapshotEnvelopeSchema,
   diagnosticsResponseSchema,
+  hermesMemoryIndexSchema,
   hermesCronIndexSchema,
   hermesCronJobDetailSchema,
   hermesSessionsIndexSchema,
@@ -15,8 +16,12 @@ import {
   skillDocumentDetailSchema,
   skillLinkedFileContentSchema,
   skillsIndexResultSchema,
+  usageWindowIdSchema,
+  usageWindowSummarySchema,
   type AppMeta,
   type DiagnosticsResponse,
+  type HermesMemoryIndex,
+  type HermesUsageSummary,
   type KeyFileContentData,
   type KeyFilesData,
   type SnapshotEnvelope
@@ -66,6 +71,35 @@ const fetchSnapshot = async <T>({
     path,
     schema: createSnapshotEnvelopeSchema(dataSchema)
   });
+
+const legacyMemorySnapshotDataSchema = memoryReadResultSchema.transform<HermesMemoryIndex>((memory) => ({
+  agents: [
+    {
+      ...memory,
+      agentId: 'default',
+      agentLabel: 'Default',
+      agentSource: 'root'
+    }
+  ],
+  agentCount: 1,
+  agentsWithMemory: memory.status === 'missing' ? 0 : 1
+}));
+
+const memorySnapshotDataSchema = z.union([hermesMemoryIndexSchema, legacyMemorySnapshotDataSchema]);
+
+const legacyUsageSummarySchema = z
+  .object({
+    loadedAt: z.string(),
+    windows: z.array(usageWindowSummarySchema),
+    availableWindows: z.array(usageWindowIdSchema)
+  })
+  .transform<HermesUsageSummary>((usage) => ({
+    ...usage,
+    agents: [],
+    records: []
+  }));
+
+const usageSnapshotDataSchema = z.union([hermesUsageSummarySchema, legacyUsageSummarySchema]);
 
 export const apiQueryKeys = {
   appMeta: ['app-meta'] as const,
@@ -129,7 +163,7 @@ export const memoryQueryOptions = () =>
     queryKey: apiQueryKeys.memory,
     queryFn: () =>
       fetchSnapshot({
-        dataSchema: memoryReadResultSchema,
+        dataSchema: memorySnapshotDataSchema,
         path: '/api/memory'
       })
   });
@@ -169,7 +203,7 @@ export const usageQueryOptions = () =>
     queryKey: apiQueryKeys.usage,
     queryFn: () =>
       fetchSnapshot({
-        dataSchema: hermesUsageSummarySchema,
+        dataSchema: usageSnapshotDataSchema,
         path: '/api/usage'
       })
   });

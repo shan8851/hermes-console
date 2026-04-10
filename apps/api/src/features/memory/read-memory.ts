@@ -1,9 +1,16 @@
 import { nodeMemoryFileSystem } from '@/features/memory/node-memory-file-system';
 import { readMemoryFiles } from '@/features/memory/read-memory-files';
+import { readHermesInstallation } from '@/features/inventory/read-installation';
 import { resolveInventoryPathConfigFromEnv } from '@/features/inventory/resolve-path-config';
 import { createUnreadablePathIssue } from '@/lib/query-issue-factories';
 import { createReadResult } from '@/lib/read-result';
-import { DEFAULT_MEMORY_CHAR_LIMIT, DEFAULT_USER_CHAR_LIMIT, type MemoryReadResult } from '@hermes-console/runtime';
+import {
+  DEFAULT_MEMORY_CHAR_LIMIT,
+  DEFAULT_USER_CHAR_LIMIT,
+  type AgentMemoryReadResult,
+  type HermesMemoryIndex,
+  type MemoryReadResult
+} from '@hermes-console/runtime';
 
 function createEmptyMemoryReadResult(hermesRoot: string): MemoryReadResult {
   return {
@@ -53,10 +60,7 @@ function createEmptyMemoryReadResult(hermesRoot: string): MemoryReadResult {
   };
 }
 
-export function readHermesMemoryResult() {
-  const paths = resolveInventoryPathConfigFromEnv();
-  const hermesRoot = paths.hermesRoot.path;
-
+function readMemoryResultForRoot(hermesRoot: string) {
   try {
     return createReadResult({
       data: readMemoryFiles({
@@ -69,7 +73,7 @@ export function readHermesMemoryResult() {
       data: createEmptyMemoryReadResult(hermesRoot),
       issues: [
         createUnreadablePathIssue({
-          id: 'memory-read-failed',
+          id: `memory-read-failed:${hermesRoot}`,
           summary: 'Memory files could not be read',
           detail: error instanceof Error ? error.message : 'Hermes Console could not read Hermes memory files.',
           path: hermesRoot
@@ -77,4 +81,35 @@ export function readHermesMemoryResult() {
       ]
     });
   }
+}
+
+export function readHermesMemoryResult() {
+  const paths = resolveInventoryPathConfigFromEnv();
+  return readMemoryResultForRoot(paths.hermesRoot.path);
+}
+
+export function readHermesMemoryIndexResult() {
+  const installation = readHermesInstallation();
+  const agentResults = installation.agents.map((agent) => {
+    const result = readMemoryResultForRoot(agent.rootPath);
+
+    return {
+      data: {
+        ...result.data,
+        agentId: agent.id,
+        agentLabel: agent.label,
+        agentSource: agent.source
+      } satisfies AgentMemoryReadResult,
+      issues: result.issues
+    };
+  });
+
+  return createReadResult({
+    data: {
+      agents: agentResults.map((agentResult) => agentResult.data),
+      agentCount: agentResults.length,
+      agentsWithMemory: agentResults.filter((agentResult) => agentResult.data.status !== 'missing').length
+    } satisfies HermesMemoryIndex,
+    issues: agentResults.flatMap((agentResult) => agentResult.issues)
+  });
 }

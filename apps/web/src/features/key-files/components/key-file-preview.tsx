@@ -1,3 +1,5 @@
+import { CopyButton } from '@/components/ui/copy-button';
+import { EmptyState } from '@/components/ui/empty-state';
 import type { KeyFileContentData, KeyFileSummary, SnapshotEnvelope } from '@hermes-console/runtime';
 
 import { QueryStatusCard } from '@/components/ui/query-status-card';
@@ -46,9 +48,7 @@ export function KeyFilePreview({
   if (selectedFileId && selectedFileError) {
     return (
       <section className="rounded-lg border border-border bg-surface/70 p-4">
-        <div className="rounded-md border border-rose-500/30 bg-rose-500/10 p-4 text-sm leading-6 text-rose-100">
-          {selectedFileError}
-        </div>
+        <EmptyState eyebrow="Unreadable" title="This file preview could not be loaded" description={selectedFileError} tone="danger" />
       </section>
     );
   }
@@ -56,9 +56,11 @@ export function KeyFilePreview({
   if (!file) {
     return (
       <section className="rounded-lg border border-border bg-surface/70 p-4">
-        <div className="rounded-md border border-dashed border-border/80 p-4 text-sm leading-6 text-fg-muted">
-          Select a file from the left to preview its raw contents and basic metadata.
-        </div>
+        <EmptyState
+          eyebrow="Select a file"
+          title="Pick a file to preview"
+          description="Choose a file from the left to inspect its raw contents and metadata."
+        />
       </section>
     );
   }
@@ -81,7 +83,10 @@ export function KeyFilePreview({
             <KeyFileKindBadge kind={file.kind} />
             {pressureLevel ? <MemoryPressureBadge level={pressureLevel} /> : null}
           </div>
-          <p className="mt-2 font-mono text-xs text-fg-muted">{file.path}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <p className="break-all font-mono text-xs text-fg-muted">{file.path}</p>
+            <CopyButton ariaLabel="Copy file path" value={file.path} />
+          </div>
         </div>
       </div>
 
@@ -107,8 +112,12 @@ export function KeyFilePreview({
             {content}
           </pre>
         ) : (
-          <div className="mt-3 rounded-md border border-dashed border-border/80 p-3 text-sm leading-6 text-fg-muted">
-            This file could not be read as text from the current filesystem reader.
+          <div className="mt-3">
+            <EmptyState
+              eyebrow="Unreadable"
+              title="This file could not be read as text"
+              description="The selected file exists, but the current filesystem reader could not load it as UTF-8 text."
+            />
           </div>
         )}
       </div>

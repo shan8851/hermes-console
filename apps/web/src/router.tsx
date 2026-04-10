@@ -139,15 +139,25 @@ const indexRoute = createRoute({
     Promise.all([
       context.queryClient.ensureQueryData(overviewQueryOptions()),
       context.queryClient.ensureQueryData(inventoryQueryOptions())
-    ]),
+  ]),
   component: HomePage
+});
+
+const sessionsSearchSchema = z.object({
+  q: z.string().optional(),
+  agent: z.string().optional()
 });
 
 const sessionsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/sessions',
+  validateSearch: (search) => sessionsSearchSchema.parse(search),
   loader: ({ context }) => context.queryClient.ensureQueryData(sessionsQueryOptions()),
-  component: SessionsPage
+  component: () => {
+    const search = sessionsRoute.useSearch();
+
+    return <SessionsPage initialAgentId={search.agent ?? 'all'} initialQuery={search.q ?? ''} />;
+  }
 });
 
 const cronRoute = createRoute({

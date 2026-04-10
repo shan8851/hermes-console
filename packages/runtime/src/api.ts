@@ -43,6 +43,7 @@ export const appMetaSchema = z.object({
   gatewayState: gatewayStateSchema,
   updateStatus: updateStatusSchema,
   updateBehind: z.number().nullable(),
+  version: z.string().optional(),
   connectedPlatforms: z.array(z.string()),
   connectedPlatformCount: z.number()
 });

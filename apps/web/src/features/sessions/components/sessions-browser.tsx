@@ -1,8 +1,10 @@
 import type { QueryKey } from '@tanstack/react-query';
-import { useDeferredValue, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 
 import { AppSelect } from '@/components/ui/app-select';
+import { EmptyState } from '@/components/ui/empty-state';
 import { RefreshButton } from '@/components/ui/refresh-button';
+import { SearchInput } from '@/components/ui/search-input';
 import { SessionsIndex } from '@/features/sessions/components/sessions-index';
 import { SessionsSummaryGrid } from '@/features/sessions/components/sessions-summary-grid';
 import type { HermesSessionSummary } from '@hermes-console/runtime';
@@ -68,19 +70,28 @@ function formatCount(value: number) {
 }
 
 export function SessionsBrowser({
+  initialAgentId,
+  initialQuery,
   loadedAt,
   refreshQueryKeys,
   sessions
 }: {
+  initialAgentId: string;
+  initialQuery: string;
   loadedAt: string;
   refreshQueryKeys: QueryKey[];
   sessions: HermesSessionSummary[];
 }) {
-  const [query, setQuery] = useState('');
-  const [agent, setAgent] = useState('all');
+  const [query, setQuery] = useState(initialQuery);
+  const [agent, setAgent] = useState(initialAgentId);
   const [source, setSource] = useState('all');
   const [platform, setPlatform] = useState('all');
   const deferredQuery = useDeferredValue(query);
+
+  useEffect(() => {
+    setQuery(initialQuery);
+    setAgent(initialAgentId);
+  }, [initialAgentId, initialQuery]);
 
   const filteredSessions = useMemo(
     () =>
@@ -100,6 +111,7 @@ export function SessionsBrowser({
   const agentOptions = createOptions(agents, 'All agents');
   const sourceOptions = createOptions(sources, 'All sources');
   const platformOptions = createOptions(platforms, 'All platforms');
+  const hasActiveFilters = query.trim().length > 0 || agent !== 'all' || source !== 'all' || platform !== 'all';
 
   const summaryItems = [
     {
@@ -143,7 +155,7 @@ export function SessionsBrowser({
 
   return (
     <div className="space-y-8">
-      <section className="max-w-4xl">
+      <section>
         <div className="flex flex-wrap items-center gap-3">
           <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">Sessions</p>
           <RefreshButton loadedAt={loadedAt} queryKeys={refreshQueryKeys} />
@@ -151,35 +163,80 @@ export function SessionsBrowser({
         <h2 className="mt-3 font-[family-name:var(--font-bricolage)] text-xl font-semibold tracking-tight text-fg-strong sm:text-2xl">
           Session History
         </h2>
-        <p className="mt-3 text-sm leading-7 text-fg-muted">
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-fg-muted">
           All recorded sessions across agents, with messaging context where available.
         </p>
-        <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1.8fr)_repeat(3,minmax(0,1fr))]">
-          <input
-            type="text"
+        <div className="mt-4 flex flex-wrap items-stretch gap-3">
+          <SearchInput
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={setQuery}
             placeholder="Search titles, platforms, models, and session ids"
-            className="min-w-0 w-full rounded-md border border-border bg-surface/70 px-3 py-2 text-sm text-fg outline-none placeholder:text-fg-muted"
+            className="min-w-[18rem] flex-[2.4_1_28rem]"
           />
-          <AppSelect value={agent} onChange={setAgent} options={agentOptions} ariaLabel="Filter sessions by agent" />
+          <AppSelect
+            value={agent}
+            onChange={setAgent}
+            options={agentOptions}
+            ariaLabel="Filter sessions by agent"
+            className="min-w-[11.5rem] flex-[0_1_12rem]"
+          />
           <AppSelect
             value={source}
             onChange={setSource}
             options={sourceOptions}
             ariaLabel="Filter sessions by source"
+            className="min-w-[11.5rem] flex-[0_1_12rem]"
           />
           <AppSelect
             value={platform}
             onChange={setPlatform}
             options={platformOptions}
             ariaLabel="Filter sessions by platform"
+            className="min-w-[11.5rem] flex-[0_1_12rem]"
           />
+          {hasActiveFilters ? (
+            <button
+              type="button"
+              onClick={() => {
+                setQuery('');
+                setAgent('all');
+                setSource('all');
+                setPlatform('all');
+              }}
+              className="rounded-xl border border-border/70 bg-bg/35 px-3 py-2.5 text-sm text-fg-muted transition-colors hover:border-accent/35 hover:text-fg"
+            >
+              Clear filters
+            </button>
+          ) : null}
         </div>
       </section>
 
       <SessionsSummaryGrid items={summaryItems} />
-      <SessionsIndex sessions={filteredSessions} />
+      {filteredSessions.length === 0 ? (
+        <EmptyState
+          eyebrow="No matches"
+          title="No sessions matched these filters"
+          description="Try a different agent, source, platform, or session search."
+          action={
+            hasActiveFilters ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setQuery('');
+                  setAgent('all');
+                  setSource('all');
+                  setPlatform('all');
+                }}
+                className="rounded-md border border-border/80 bg-bg/40 px-3 py-1.5 text-xs text-fg-muted transition-colors hover:border-accent/40 hover:text-fg"
+              >
+                Reset filters
+              </button>
+            ) : null
+          }
+        />
+      ) : (
+        <SessionsIndex sessions={filteredSessions} />
+      )}
     </div>
   );
 }
