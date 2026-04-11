@@ -109,7 +109,9 @@ function LogList({
   return (
     <section className="rounded-lg border border-border bg-surface/70 p-4">
       <div className="mb-4">
-        <h3 className="font-[family-name:var(--font-bricolage)] text-base font-semibold text-fg-strong">Detected logs</h3>
+        <h3 className="font-[family-name:var(--font-bricolage)] text-base font-semibold text-fg-strong">
+          Detected logs
+        </h3>
         <p className="mt-2 text-sm leading-6 text-fg-muted">Pick a runtime log to inspect its latest lines.</p>
       </div>
 
@@ -150,15 +152,7 @@ function LogList({
   );
 }
 
-function LogLines({
-  detail,
-  level,
-  query
-}: {
-  detail: HermesLogDetail;
-  level: string;
-  query: string;
-}) {
+function LogLines({ detail, level, query }: { detail: HermesLogDetail; level: string; query: string }) {
   const filteredLines = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
@@ -188,8 +182,12 @@ function LogLines({
   return (
     <div className="rounded-md border border-border/70 bg-bg/40">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-3 py-2 text-xs text-fg-muted">
-        <span>{filteredLines.length} visible line{filteredLines.length === 1 ? '' : 's'}</span>
-        <span>loaded tail: {detail.returnedLines} / requested {detail.requestedLines}</span>
+        <span>
+          {filteredLines.length} visible line{filteredLines.length === 1 ? '' : 's'}
+        </span>
+        <span>
+          loaded tail: {detail.returnedLines} / requested {detail.requestedLines}
+        </span>
       </div>
       <div className="max-h-[42rem] overflow-auto px-3 py-3">
         <div className="space-y-1">
@@ -266,7 +264,9 @@ export function LogsBrowser({
   const selectedDetail = selectedLogQuery.data?.data ?? null;
   const summaryItems = createSummaryItems(logs, selectedDetail);
   const effectiveRefreshKeys =
-    selectedLogId == null ? refreshQueryKeys : [...refreshQueryKeys, apiQueryKeys.logDetail(selectedLogId, Number(lineCount))];
+    selectedLogId == null
+      ? refreshQueryKeys
+      : [...refreshQueryKeys, apiQueryKeys.logDetail(selectedLogId, Number(lineCount))];
 
   if (logs.length === 0) {
     return (
@@ -283,7 +283,10 @@ export function LogsBrowser({
       <section className="max-w-3xl">
         <div className="flex flex-wrap items-center gap-3">
           <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">Logs</p>
-          <RefreshButton loadedAt={selectedLogQuery.data?.meta.capturedAt ?? loadedAt} queryKeys={effectiveRefreshKeys} />
+          <RefreshButton
+            loadedAt={selectedLogQuery.data?.meta.capturedAt ?? loadedAt}
+            queryKeys={effectiveRefreshKeys}
+          />
           <button
             type="button"
             onClick={() => setAutoRefresh((previous) => !previous)}
@@ -301,8 +304,8 @@ export function LogsBrowser({
           Runtime Logs
         </h2>
         <p className="mt-3 text-sm leading-7 text-fg-muted">
-          Inspect the latest Hermes runtime logs without tailing files manually. The default view loads the last 50 lines
-          of the selected log.
+          Inspect the latest Hermes runtime logs without tailing files manually. The default view loads the last 50
+          lines of the selected log.
         </p>
       </section>
 
@@ -312,7 +315,7 @@ export function LogsBrowser({
         ))}
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(18rem,0.58fr)_minmax(0,1.42fr)]">
         <LogList logs={logs} selectedLogId={selectedLogId} onSelect={setSelectedLogId} />
 
         <section className="rounded-lg border border-border bg-surface/70 p-4">
@@ -326,7 +329,9 @@ export function LogsBrowser({
               </p>
             </div>
             {selectedDetail ? (
-              <div className="text-xs text-fg-muted">{new Date(selectedDetail.file.lastModifiedMs).toLocaleString()}</div>
+              <div className="text-xs text-fg-muted">
+                {new Date(selectedDetail.file.lastModifiedMs).toLocaleString()}
+              </div>
             ) : null}
           </div>
 
