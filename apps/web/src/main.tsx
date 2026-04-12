@@ -5,6 +5,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/lib/query-client';
 import { AppRouterProvider, createAppRouter } from '@/router';
 
+import 'highlight.js/styles/github-dark.css';
 import './app.css';
 
 const router = createAppRouter({

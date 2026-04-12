@@ -14,6 +14,7 @@
     "@hermes-console/runtime": "workspace:*",
     "@tanstack/react-query": "^5.90.5",
     "@tanstack/react-router": "^1.133.15",
+    "highlight.js": "^11.11.1",
     "lucide-react": "^0.552.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

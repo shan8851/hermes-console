@@ -19,6 +19,17 @@ export function readHermesConfigQuery(): HermesQueryResult<HermesConfigIndex> {
     });
   }
 
+  if (config.files.length === 0) {
+    issues.push({
+      id: 'config-no-files',
+      code: 'missing_path',
+      severity: 'warning',
+      summary: 'No config files found',
+      detail: 'No config.yaml files were found for any discovered agent.',
+      path: installation.data.paths.hermesRoot.path
+    });
+  }
+
   return createHermesQueryResult({
     data: config,
     capturedAt: new Date().toISOString(),

@@ -1,85 +1,81 @@
-import { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
+import hljs from 'highlight.js/lib/core';
+import yaml from 'highlight.js/lib/languages/yaml';
 
 import { QueryStatusCard } from '@/components/ui/query-status-card';
 import { configQueryOptions } from '@/lib/api';
 
-type ViewMode = 'pretty' | 'raw';
+hljs.registerLanguage('yaml', yaml);
 
 export function ConfigPage() {
   const query = useSuspenseQuery(configQueryOptions());
-  const [view, setView] = useState<ViewMode>('pretty');
   const data = query.data.data;
+  const files = data.files;
 
-  // Group config entries by section
-  const sections = new Map<string, typeof data.entries>();
-  for (const entry of data.entries) {
-    const section = entry.section ?? 'root';
-    if (!sections.has(section)) sections.set(section, []);
-    sections.get(section)!.push(entry);
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const activeFile = files[selectedIdx] ?? files[0];
+  const codeRef = useRef<HTMLElement>(null);
+
+  const highlighted = useMemo(() => {
+    if (!activeFile?.content) return '';
+    return hljs.highlight(activeFile.content, { language: 'yaml' }).value;
+  }, [activeFile?.content]);
+
+  if (files.length === 0) {
+    return (
+      <div className="space-y-6">
+        <QueryStatusCard title="Config read quality" status={query.data.meta.dataStatus} issues={query.data.issues} />
+        <p className="text-sm text-fg-muted">No config files found.</p>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
       <QueryStatusCard title="Config read quality" status={query.data.meta.dataStatus} issues={query.data.issues} />
 
-      {/* Header with view toggle */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="font-[family-name:var(--font-bricolage)] text-lg font-semibold text-fg-strong">
-            Configuration
-          </h2>
-          <p className="mt-1 text-sm text-fg-muted">
-            Hermes runtime config from <code className="text-xs">{data.configPath}</code>
-          </p>
-        </div>
-        <div className="flex rounded-lg border border-border bg-bg/40 p-0.5">
-          <button
-            onClick={() => setView('pretty')}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-              view === 'pretty' ? 'bg-surface text-fg-strong shadow-sm' : 'text-fg-muted hover:text-fg-strong'
-            }`}
-          >
-            Pretty
-          </button>
-          <button
-            onClick={() => setView('raw')}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-              view === 'raw' ? 'bg-surface text-fg-strong shadow-sm' : 'text-fg-muted hover:text-fg-strong'
-            }`}
-          >
-            Raw
-          </button>
-        </div>
+      <div>
+        <h2 className="font-[family-name:var(--font-bricolage)] text-lg font-semibold text-fg-strong">
+          Configuration
+        </h2>
+        <p className="mt-1 text-sm text-fg-muted">
+          Runtime config for each discovered agent.
+        </p>
       </div>
 
-      {view === 'pretty' ? (
-        <div className="space-y-6">
-          {Array.from(sections.entries()).map(([section, entries]) => (
-            <section key={section} className="rounded-xl border border-border bg-surface/70 p-4">
-              <h3 className="mb-3 font-mono text-[11px] uppercase tracking-[0.18em] text-fg-faint">{section}</h3>
-              <div className="space-y-1">
-                {entries.map((entry) => (
-                  <div key={entry.key} className="flex items-start gap-3 rounded-lg px-3 py-2 hover:bg-bg/40">
-                    <code className="min-w-0 shrink-0 text-xs text-fg-muted">{entry.key}</code>
-                    <code className="min-w-0 break-all text-xs text-fg-strong">{entry.value}</code>
-                  </div>
-                ))}
-              </div>
-            </section>
+      {/* Agent tabs */}
+      {files.length > 1 && (
+        <div className="flex gap-1 rounded-lg border border-border bg-bg/40 p-1">
+          {files.map((file, idx) => (
+            <button
+              key={file.agentId}
+              onClick={() => setSelectedIdx(idx)}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                idx === selectedIdx ? 'bg-surface text-fg-strong shadow-sm' : 'text-fg-muted hover:text-fg-strong'
+              }`}
+            >
+              {file.agentLabel}
+              <span className="ml-1.5 text-fg-faint">{file.agentSource === 'root' ? '(root)' : '(profile)'}</span>
+            </button>
           ))}
         </div>
-      ) : (
-        <section className="rounded-xl border border-border bg-surface/70 p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-faint">config.yaml</h3>
-            <span className="text-xs text-fg-faint">{data.configPath}</span>
-          </div>
-          <pre className="max-h-[600px] overflow-auto rounded-lg bg-bg/60 p-4 font-mono text-xs leading-5 text-fg-strong">
-            {data.rawConfig ?? 'File not found'}
-          </pre>
-        </section>
       )}
+
+      {/* YAML with syntax highlighting */}
+      <section className="rounded-xl border border-border bg-surface/70 p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-faint">config.yaml</h3>
+          <span className="text-xs text-fg-faint">{activeFile.path}</span>
+        </div>
+        <pre className="max-h-[600px] overflow-auto rounded-lg bg-bg/60 p-4 text-xs leading-5">
+          <code
+            ref={codeRef}
+            className="language-yaml hljs"
+            dangerouslySetInnerHTML={{ __html: highlighted || 'File not found' }}
+          />
+        </pre>
+      </section>
     </div>
   );
 }
