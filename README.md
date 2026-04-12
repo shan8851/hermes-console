@@ -132,6 +132,9 @@ Do not expose Hermes Console directly to the public internet without putting pro
   <img src="./apps/web/public/readme/usage.png" width="45%" alt="Usage" />
   <img src="./apps/web/public/readme/files.png" width="45%" alt="Files" />
 </p>
+<p align="center">
+  <img src="./apps/web/public/readme/logs.png" width="45%" alt="Logs" />
+</p>
 
 ## Release workflow
 
