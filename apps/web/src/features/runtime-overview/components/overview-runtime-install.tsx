@@ -56,6 +56,12 @@ export function OverviewRuntimeInstall({ overview }: { overview: RuntimeOverview
   const updateBehind = appMeta?.updateBehind ?? overview.updateBehind;
   const installStatusLabel = appMeta?.installStatus ?? overview.installStatus;
   const gatewayStateLabel = appMeta?.gatewayState ?? overview.gatewayState;
+  const runtimeVersionLabel = appMeta?.hermesVersion ?? 'Unknown';
+  const runtimeBuildPrefix = appMeta?.hermesBuildDate ? `Build ${appMeta.hermesBuildDate}. ` : '';
+  const runtimeVersionDetail =
+    updateBehind != null && updateBehind > 0
+      ? `${runtimeBuildPrefix}${updateBehind} commit${updateBehind === 1 ? '' : 's'} behind. Checked ${formatTimestamp(appMeta?.updateCheckedAt ?? null)}.`
+      : `${runtimeBuildPrefix}Update status ${updateStatusLabel.replace('_', ' ')}. Checked ${formatTimestamp(appMeta?.updateCheckedAt ?? null)}.`;
 
   return (
     <section className="rounded-lg border border-border bg-surface/70 p-4">
@@ -102,12 +108,8 @@ export function OverviewRuntimeInstall({ overview }: { overview: RuntimeOverview
         />
         <RuntimeCard
           label="version"
-          value={appMeta?.version ?? 'Unknown'}
-          detail={
-            updateBehind != null && updateBehind > 0
-              ? `${updateBehind} commit${updateBehind === 1 ? '' : 's'} behind. Checked ${formatTimestamp(appMeta?.updateCheckedAt ?? null)}.`
-              : `Update status ${updateStatusLabel.replace('_', ' ')}. Checked ${formatTimestamp(appMeta?.updateCheckedAt ?? null)}.`
-          }
+          value={runtimeVersionLabel}
+          detail={runtimeVersionDetail}
         />
         <RuntimeCard
           label="connected platforms"

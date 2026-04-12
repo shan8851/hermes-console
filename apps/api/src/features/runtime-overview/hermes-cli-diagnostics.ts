@@ -1,10 +1,53 @@
+import { execFileSync } from 'node:child_process';
+
 import type { HermesQueryIssue } from '@hermes-console/runtime';
 import type { DoctorSnapshotSummary, StatusEntry, StatusSnapshotSummary } from '@hermes-console/runtime';
 
 const ANSI_ESCAPE_PATTERN = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g');
 
+type HermesVersionSummary = {
+  version: string | null;
+  buildDate: string | null;
+  projectPath: string | null;
+  pythonVersion: string | null;
+  openAiSdkVersion: string | null;
+};
+
+const createEmptyHermesVersionSummary = (): HermesVersionSummary => ({
+  version: null,
+  buildDate: null,
+  projectPath: null,
+  pythonVersion: null,
+  openAiSdkVersion: null
+});
+
 export function readHermesBinaryPath(env: NodeJS.ProcessEnv = process.env): string {
   return env.HERMES_CONSOLE_HERMES_BIN || 'hermes';
+}
+
+const readVersionField = (lines: string[], label: string): string | null =>
+  lines.find((line) => line.startsWith(`${label}:`))?.slice(label.length + 1).trim() ?? null;
+
+export function parseVersionOutput(rawContent: string | null): HermesVersionSummary {
+  if (!rawContent) {
+    return createEmptyHermesVersionSummary();
+  }
+
+  const lines = rawContent
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((line) => line.replace(ANSI_ESCAPE_PATTERN, '').trim());
+  const versionMatch = lines
+    .find((line) => line.startsWith('Hermes Agent '))
+    ?.match(/^Hermes Agent\s+(\S+)(?:\s+\(([^)]+)\))?$/);
+
+  return {
+    version: versionMatch?.[1] ?? null,
+    buildDate: versionMatch?.[2] ?? null,
+    projectPath: readVersionField(lines, 'Project'),
+    pythonVersion: readVersionField(lines, 'Python'),
+    openAiSdkVersion: readVersionField(lines, 'OpenAI SDK')
+  };
 }
 
 function parseStatusSymbol(symbol: string): StatusEntry['symbol'] {
@@ -97,7 +140,6 @@ async function runHermesCommand(args: string[]) {
   const hermesBin = readHermesBinaryPath();
 
   try {
-    const { execFileSync } = await import('node:child_process');
     const output = execFileSync(hermesBin, args, {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -115,6 +157,24 @@ async function runHermesCommand(args: string[]) {
       output: null,
       issue: createCommandIssue({ command, error, hermesBin })
     };
+  }
+}
+
+export function readHermesVersionSummary(): HermesVersionSummary {
+  const hermesBin = readHermesBinaryPath();
+
+  try {
+    const output = execFileSync(hermesBin, ['--version'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: 15000,
+      cwd: process.env.HOME ?? '/',
+      env: process.env
+    });
+
+    return parseVersionOutput(output);
+  } catch {
+    return createEmptyHermesVersionSummary();
   }
 }
 

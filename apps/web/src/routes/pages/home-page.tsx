@@ -26,10 +26,10 @@ export const HomePage = () => {
         overview={overview.data.data}
         refreshQueryKeys={[apiQueryKeys.overview, apiQueryKeys.inventory, apiQueryKeys.diagnostics]}
       />
+      <OverviewGlance overview={overview.data.data} />
       <OverviewRuntimeInstall overview={overview.data.data} />
       <OverviewDiagnostics />
       <OverviewAttention overview={overview.data.data} />
-      <OverviewGlance overview={overview.data.data} />
       <OverviewSurfaces overview={overview.data.data} />
       <OverviewConfiguration overview={overview.data.data} />
       <AgentList agents={inventory.data.data.agents} />

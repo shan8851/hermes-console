@@ -1,4 +1,4 @@
-import type { AccessCheckSummary, RuntimeOverviewSummary } from '@hermes-console/runtime';
+import type { AccessCheckSummary, RuntimeOverviewSummary, RuntimeProfileItem } from '@hermes-console/runtime';
 
 const statusColor = (status: AccessCheckSummary['status']) => {
   switch (status) {
@@ -26,6 +26,18 @@ const dotColor = (status: AccessCheckSummary['status']) => {
   }
 };
 
+const runtimeDefaultLabels = ['model', 'search', 'approvals', 'security'] as const;
+const voiceDefaultLabels = ['voice input', 'voice output'] as const;
+
+const runtimeLabelCopy: Record<string, string> = {
+  model: 'model',
+  search: 'search',
+  approvals: 'approvals',
+  security: 'security',
+  'voice input': 'voice in',
+  'voice output': 'voice out'
+};
+
 function CredentialRow({ item }: { item: AccessCheckSummary }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3">
@@ -43,8 +55,31 @@ function CredentialRow({ item }: { item: AccessCheckSummary }) {
   );
 }
 
+function RuntimeDefaultChip({ item }: { item: RuntimeProfileItem }) {
+  const label = runtimeLabelCopy[item.label] ?? item.label;
+
+  return (
+    <article className="flex min-w-[13rem] flex-1 flex-col gap-1 rounded-xl border border-border/60 bg-surface/35 px-3 py-2.5">
+      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-fg-faint">{label}</p>
+      <p className="text-sm font-medium text-fg-strong">{item.value}</p>
+      {item.detail ? <p className="text-xs leading-5 text-fg-muted">{item.detail}</p> : null}
+    </article>
+  );
+}
+
 export function OverviewConfiguration({ overview }: { overview: RuntimeOverviewSummary }) {
   const allCredentials = [...overview.access.authProviders, ...overview.access.apiKeys];
+  const runtimeProfileByLabel = new Map(overview.runtimeProfile.map((item) => [item.label, item] as const));
+  const runtimeDefaultItems = runtimeDefaultLabels.flatMap((label) => {
+    const item = runtimeProfileByLabel.get(label);
+
+    return item ? [item] : [];
+  });
+  const voiceDefaultItems = voiceDefaultLabels.flatMap((label) => {
+    const item = runtimeProfileByLabel.get(label);
+
+    return item ? [item] : [];
+  });
 
   return (
     <section>
@@ -52,14 +87,33 @@ export function OverviewConfiguration({ overview }: { overview: RuntimeOverviewS
         Configuration
       </h3>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {overview.runtimeProfile.map((item) => (
-          <article key={item.label} className="rounded-lg border border-border/70 bg-bg/40 p-4">
-            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-faint">{item.label}</p>
-            <p className="mt-2 text-sm font-medium text-fg-strong">{item.value}</p>
-            {item.detail ? <p className="mt-2 text-sm leading-6 text-fg-muted">{item.detail}</p> : null}
-          </article>
-        ))}
+      <div className="rounded-lg border border-border/70 bg-bg/40 p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-faint">Runtime defaults</p>
+          <p className="text-xs text-fg-faint">Compact posture snapshot for low-frequency settings.</p>
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          {runtimeDefaultItems.map((item) => (
+            <RuntimeDefaultChip key={item.label} item={item} />
+          ))}
+        </div>
+
+        {voiceDefaultItems.length > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-2 border-t border-border/50 pt-3">
+            {voiceDefaultItems.map((item) => (
+              <span
+                key={item.label}
+                className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-surface/35 px-3 py-1.5 text-sm text-fg-muted"
+              >
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-fg-faint">
+                  {runtimeLabelCopy[item.label] ?? item.label}
+                </span>
+                <span className="text-fg-strong">{item.value}</span>
+              </span>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-4 rounded-lg border border-border/70 bg-bg/40 divide-y divide-border/50">

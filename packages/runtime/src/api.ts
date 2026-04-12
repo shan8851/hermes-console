@@ -44,6 +44,8 @@ export const appMetaSchema = z.object({
   updateCheckedAt: z.string().nullable(),
   updateStatus: updateStatusSchema,
   updateBehind: z.number().nullable(),
+  hermesVersion: z.string().nullable().optional(),
+  hermesBuildDate: z.string().nullable().optional(),
   version: z.string().optional(),
   connectedPlatforms: z.array(z.string()),
   connectedPlatformCount: z.number()

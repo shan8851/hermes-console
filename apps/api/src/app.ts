@@ -11,7 +11,7 @@ import { readHermesInventoryQuery } from '@/features/inventory/query-inventory';
 import { readKeyFileContentQuery, readKeyFilesDataQuery } from '@/features/key-files/query-key-files';
 import { readHermesLogDetailQuery, readHermesLogsQuery } from '@/features/logs/query-logs';
 import { readHermesMemoryQuery } from '@/features/memory/query-memory';
-import { readHermesCliDiagnostics } from '@/features/runtime-overview/hermes-cli-diagnostics';
+import { readHermesCliDiagnostics, readHermesVersionSummary } from '@/features/runtime-overview/hermes-cli-diagnostics';
 import { readRuntimeOverviewQuery } from '@/features/runtime-overview/query-runtime-overview';
 import { readShellStatusQuery } from '@/features/runtime-overview/query-shell-status';
 import { readHermesSessionsQuery } from '@/features/sessions/query-sessions';
@@ -51,11 +51,14 @@ const appVersion = readAppVersion();
 
 const createAppMeta = (): AppMeta => {
   const shellStatus = readShellStatusQuery();
+  const hermesVersion = readHermesVersionSummary();
 
   return {
     connectedPlatforms: shellStatus.data.connectedPlatforms,
     connectedPlatformCount: shellStatus.data.connectedPlatformCount,
     gatewayState: shellStatus.data.gatewayState,
+    hermesBuildDate: hermesVersion.buildDate,
+    hermesVersion: hermesVersion.version,
     installStatus: shellStatus.data.installStatus,
     rootKind: shellStatus.data.rootKind,
     rootPath: shellStatus.data.rootPath,
