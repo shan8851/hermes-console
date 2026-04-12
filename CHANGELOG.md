@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0 - 2026-04-13
+
+- Added a new Config page with per-agent `config.yaml` inspection, root/profile tabs, raw YAML syntax highlighting, and explicit missing or unreadable states.
+- Added `/api/config` plus shared runtime config types so the web app can expose Hermes config files as a first-class read-only surface.
+- Expanded Overview runtime/install detail with clearer configuration posture and surfaced Hermes CLI version information more explicitly.
+- Added GitHub Actions CI for pull requests and pushes to `main`, covering formatting, linting, typechecking, tests, and build, and aligned `pnpm release:check` with the same gate.
+- Added targeted tests around config reads, config route states, runtime install detail, and Hermes CLI version parsing.
+
 ## 0.3.0 - 2026-04-12
 
 - Reworked the shell for small screens so navigation collapses into a header and drawer instead of rendering the sidebar inline above the page.

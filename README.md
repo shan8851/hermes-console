@@ -23,6 +23,7 @@ A read-only web UI that inspects your local Hermes state directly from disk. No 
 - **Cron** — scheduled job status, calendar view, observed run health, recent outputs
 - **Skills** — installed skills, categories, linked files, detail views
 - **Memory** — `MEMORY.md` / `USER.md` visibility with pressure indicators
+- **Config** — per-agent `config.yaml` inspection with readable missing/unreadable states
 - **Files** — high-signal config and instruction file previews
 - **Usage** — token counts, estimated cost breakdowns, and trend charts
 - **Logs** — bounded runtime log tails with search, level filtering, and opt-in auto-refresh
@@ -38,13 +39,12 @@ A read-only web UI that inspects your local Hermes state directly from disk. No 
 
 If you run Hermes locally and want to understand your setup without digging through files and CLI output — this does that. One screen, live data, calm UX, no theatre.
 
-Recent polish in `v0.3.0`:
+Recent polish in `v0.4.0`:
 
-- responsive shell with a mobile header and drawer instead of a dumped sidebar
-- cron list and 7-day calendar views with clearer failure-rate signals
-- sessions cards cleaned up for faster scanning
-- usage charts that make token and session trends legible
-- a dedicated `/logs` page for Hermes runtime logs
+- a new Config page for inspecting `config.yaml` across root and profile agents
+- stronger runtime/install detail on Overview, including clearer Hermes CLI version visibility
+- a proper GitHub Actions CI gate for PRs and pushes to `main`
+- expanded config/runtime test coverage to keep the new read surfaces honest
 
 ## Running Hermes Console
 
@@ -146,8 +146,8 @@ PRs to `main` also run GitHub Actions checks for formatting, linting, typechecki
 
 ```bash
 pnpm release:check
-git commit -m "feat: ship v0.3.0 ux and ops pass"
-git tag v0.3.0
+git commit -m "chore(release): prepare v0.4.0"
+git tag v0.4.0
 ```
 
 After that, push `main` and tags, then create the matching GitHub release from the `CHANGELOG.md` notes.
