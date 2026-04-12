@@ -25,17 +25,18 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v6
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: 20.19
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Set up pnpm via Corepack
+        run: |
+          corepack enable
+          corepack install --global pnpm@10.23.0
+          pnpm --version
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
