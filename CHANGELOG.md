@@ -4,6 +4,7 @@
 
 - Reworked the shell for small screens so navigation collapses into a header and drawer instead of rendering the sidebar inline above the page.
 - Expanded Cron with clearer health metadata, server-derived upcoming runs, a 7-day calendar view, and a detail page that separates observed execution health from saved output files.
+- Fixed cron occurrence expansion in the built API/runtime path so high-frequency schedules render correctly outside the `tsx` dev server too.
 - Cleaned up Sessions cards, replacing the confusing root-agent `Default` emphasis with clearer model and source context.
 - Added usage charts for session/token trends and stacked token-category breakdowns.
 - Added a new Logs page with bounded tail reads, search, level filtering, manual refresh, and opt-in 15-second auto-refresh.
