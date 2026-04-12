@@ -19,7 +19,9 @@ export function readHermesConfig(): HermesConfigIndex {
       agentLabel: agent.label,
       agentSource: agent.source,
       path: configPath,
-      content: result.content ?? null
+      content: result.content ?? null,
+      readStatus: result.status,
+      readDetail: result.status === 'unreadable' ? result.detail : null
     });
   }
 

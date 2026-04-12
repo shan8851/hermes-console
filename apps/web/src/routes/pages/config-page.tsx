@@ -6,16 +6,17 @@ import yaml from 'highlight.js/lib/languages/yaml';
 import { QueryStatusCard } from '@/components/ui/query-status-card';
 import { configQueryOptions } from '@/lib/api';
 
+import type { HermesConfigFile, HermesQueryIssue, HermesQueryStatus } from '@hermes-console/runtime';
+
 hljs.registerLanguage('yaml', yaml);
 
 export function ConfigPage() {
   const query = useSuspenseQuery(configQueryOptions());
-  const data = query.data.data;
-  const files = data.files;
-
   const [selectedIdx, setSelectedIdx] = useState(0);
+  const files = query.data.data.files;
+  const firstFile = files[0];
 
-  if (files.length === 0) {
+  if (!firstFile) {
     return (
       <div className="space-y-6">
         <QueryStatusCard title="Config read quality" status={query.data.meta.dataStatus} issues={query.data.issues} />
@@ -24,9 +25,18 @@ export function ConfigPage() {
     );
   }
 
-  const activeFile = files[selectedIdx] ?? files[0];
+  const activeFile = files[selectedIdx] ?? firstFile;
 
-  return <ConfigViewer files={files} activeFile={activeFile} selectedIdx={selectedIdx} onSelect={setSelectedIdx} issues={query.data.issues} status={query.data.meta.dataStatus} />;
+  return (
+    <ConfigViewer
+      files={files}
+      activeFile={activeFile}
+      selectedIdx={selectedIdx}
+      onSelect={setSelectedIdx}
+      issues={query.data.issues}
+      status={query.data.meta.dataStatus}
+    />
+  );
 }
 
 function ConfigViewer({
@@ -37,17 +47,17 @@ function ConfigViewer({
   issues,
   status
 }: {
-  files: { agentId: string; agentLabel: string; agentSource: string; path: string; content: string | null }[];
-  activeFile: { agentId: string; agentLabel: string; agentSource: string; path: string; content: string | null };
+  files: HermesConfigFile[];
+  activeFile: HermesConfigFile;
   selectedIdx: number;
   onSelect: (idx: number) => void;
-  issues: unknown[];
-  status: string;
+  issues: HermesQueryIssue[];
+  status: HermesQueryStatus;
 }) {
   const highlighted = useMemo(() => {
-    if (!activeFile.content) return '';
+    if (activeFile.readStatus !== 'ready' || activeFile.content == null) return '';
     return hljs.highlight(activeFile.content, { language: 'yaml' }).value;
-  }, [activeFile.content]);
+  }, [activeFile.content, activeFile.readStatus]);
 
   return (
     <div className="space-y-6">
@@ -86,13 +96,55 @@ function ConfigViewer({
           <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-faint">config.yaml</h3>
           <span className="text-xs text-fg-faint">{activeFile.path}</span>
         </div>
-        <pre className="max-h-[600px] overflow-auto rounded-lg bg-bg/60 p-4 text-xs leading-5">
-          <code
-            className="language-yaml hljs"
-            dangerouslySetInnerHTML={{ __html: highlighted || 'File not found' }}
-          />
-        </pre>
+        <ConfigFileBody activeFile={activeFile} highlighted={highlighted} />
       </section>
+    </div>
+  );
+}
+
+function ConfigFileBody({
+  activeFile,
+  highlighted
+}: {
+  activeFile: HermesConfigFile;
+  highlighted: string;
+}) {
+  if (activeFile.readStatus === 'missing') {
+    return (
+      <ConfigStatePanel
+        title="config.yaml not found"
+        detail="Hermes Console did not find config.yaml under this agent root."
+      />
+    );
+  }
+
+  if (activeFile.readStatus === 'unreadable') {
+    return (
+      <ConfigStatePanel
+        title="config.yaml could not be read"
+        detail={activeFile.readDetail ?? 'Hermes Console could not read config.yaml under this agent root.'}
+      />
+    );
+  }
+
+  return (
+    <pre className="max-h-[600px] overflow-auto rounded-lg bg-bg/60 p-4 text-xs leading-5">
+      <code className="language-yaml hljs" dangerouslySetInnerHTML={{ __html: highlighted }} />
+    </pre>
+  );
+}
+
+function ConfigStatePanel({
+  title,
+  detail
+}: {
+  title: string;
+  detail: string;
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-bg/40 p-4">
+      <p className="text-sm font-medium text-fg-strong">{title}</p>
+      <p className="mt-2 text-sm leading-6 text-fg-muted">{detail}</p>
     </div>
   );
 }
