@@ -17,6 +17,7 @@ import { readShellStatusQuery } from '@/features/runtime-overview/query-shell-st
 import { readHermesSessionsQuery } from '@/features/sessions/query-sessions';
 import { readSkillDocumentDetailQuery, readSkillLinkedFileContentQuery } from '@/features/skills/query-skill-detail';
 import { readHermesSkillsQuery } from '@/features/skills/query-skills';
+import { readHermesConfigQuery } from '@/features/config/query-config';
 import { readHermesUsageQuery } from '@/features/usage/query-usage';
 import { createLiveSnapshotEnvelope } from '@/lib/http-envelope';
 import { registerStaticSite } from '@/static-site';
@@ -276,6 +277,14 @@ export const createApp = ({ config }: { config: ServerConfig }) => {
     context.json(
       createLiveSnapshotEnvelope({
         result: readHermesUsageQuery()
+      })
+    )
+  );
+
+  app.get('/api/config', (context) =>
+    context.json(
+      createLiveSnapshotEnvelope({
+        result: readHermesConfigQuery()
       })
     )
   );
