@@ -59,11 +59,12 @@ export function readHermesConfigQuery(): HermesQueryResult<HermesConfigIndex> {
   return createHermesQueryResult({
     data: config,
     capturedAt: new Date().toISOString(),
-    status: !installation.data.hermesRootExists || readableConfigCount === 0
-      ? 'missing'
-      : issues.length > 0 || installation.data.status === 'partial'
-        ? 'partial'
-        : 'ready',
+    status:
+      !installation.data.hermesRootExists || readableConfigCount === 0
+        ? 'missing'
+        : issues.length > 0 || installation.data.status === 'partial'
+          ? 'partial'
+          : 'ready',
     issues
   });
 }

@@ -64,12 +64,8 @@ function ConfigViewer({
       <QueryStatusCard title="Config read quality" status={status} issues={issues} />
 
       <div>
-        <h2 className="font-[family-name:var(--font-bricolage)] text-lg font-semibold text-fg-strong">
-          Configuration
-        </h2>
-        <p className="mt-1 text-sm text-fg-muted">
-          Runtime config for each discovered agent.
-        </p>
+        <h2 className="font-(family-name:--font-bricolage) text-lg font-semibold text-fg-strong">Configuration</h2>
+        <p className="mt-1 text-sm text-fg-muted">Runtime config for each discovered agent.</p>
       </div>
 
       {/* Agent tabs */}
@@ -102,13 +98,7 @@ function ConfigViewer({
   );
 }
 
-function ConfigFileBody({
-  activeFile,
-  highlighted
-}: {
-  activeFile: HermesConfigFile;
-  highlighted: string;
-}) {
+function ConfigFileBody({ activeFile, highlighted }: { activeFile: HermesConfigFile; highlighted: string }) {
   if (activeFile.readStatus === 'missing') {
     return (
       <ConfigStatePanel
@@ -128,19 +118,13 @@ function ConfigFileBody({
   }
 
   return (
-    <pre className="max-h-[600px] overflow-auto rounded-lg bg-bg/60 p-4 text-xs leading-5">
+    <pre className="max-h-150 overflow-auto rounded-lg bg-bg/60 p-4 text-xs leading-5">
       <code className="language-yaml hljs" dangerouslySetInnerHTML={{ __html: highlighted }} />
     </pre>
   );
 }
 
-function ConfigStatePanel({
-  title,
-  detail
-}: {
-  title: string;
-  detail: string;
-}) {
+function ConfigStatePanel({ title, detail }: { title: string; detail: string }) {
   return (
     <div className="rounded-lg border border-border bg-bg/40 p-4">
       <p className="text-sm font-medium text-fg-strong">{title}</p>

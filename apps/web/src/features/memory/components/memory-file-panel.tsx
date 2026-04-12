@@ -120,11 +120,11 @@ export function MemoryFilePanel({
             </div>
           ) : null}
 
-            <div className="mt-4">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-faint">saved blocks</p>
-                <p className="text-xs text-fg-muted">ordered as they appear in the file, not native Hermes IDs</p>
-              </div>
+          <div className="mt-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-faint">saved blocks</p>
+              <p className="text-xs text-fg-muted">ordered as they appear in the file, not native Hermes IDs</p>
+            </div>
 
             {visibleEntries.length > 0 ? (
               <div className="space-y-3">

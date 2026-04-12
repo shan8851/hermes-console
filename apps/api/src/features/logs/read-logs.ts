@@ -144,8 +144,10 @@ export function readHermesLogsResult(): ReadResult<HermesLogsIndex> {
       const rightPriority = LOG_FILE_NAMES.indexOf(path.basename(right) as (typeof LOG_FILE_NAMES)[number]);
 
       if (leftPriority !== -1 || rightPriority !== -1) {
-        return (leftPriority === -1 ? Number.MAX_SAFE_INTEGER : leftPriority) -
-          (rightPriority === -1 ? Number.MAX_SAFE_INTEGER : rightPriority);
+        return (
+          (leftPriority === -1 ? Number.MAX_SAFE_INTEGER : leftPriority) -
+          (rightPriority === -1 ? Number.MAX_SAFE_INTEGER : rightPriority)
+        );
       }
 
       return left.localeCompare(right);

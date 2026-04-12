@@ -102,7 +102,10 @@ function buildBucketStarts(now: Date, windowId: UsageWindowId): number[] {
   const bucketSizeMs = windowId === '1d' ? 60 * 60 * 1_000 : 24 * 60 * 60 * 1_000;
   const currentBucketStart = getBucketStart(now.getTime(), windowId);
 
-  return Array.from({ length: bucketCount }, (_, index) => currentBucketStart - (bucketCount - index - 1) * bucketSizeMs);
+  return Array.from(
+    { length: bucketCount },
+    (_, index) => currentBucketStart - (bucketCount - index - 1) * bucketSizeMs
+  );
 }
 
 function getCurrentUsageWindow({
@@ -156,7 +159,7 @@ function UsageSummaryGrid({ items }: { items: Array<{ label: string; value: stri
       {items.map((item) => (
         <article key={item.label} className="rounded-lg border border-border bg-surface/70 p-4">
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-faint">{item.label}</p>
-          <p className="mt-3 font-[family-name:var(--font-bricolage)] text-2xl font-semibold tracking-tight text-fg-strong">
+          <p className="mt-3 font-(family-name:--font-bricolage) text-2xl font-semibold tracking-tight text-fg-strong">
             {item.value}
           </p>
           <p className="mt-2 text-sm leading-6 text-fg-muted">{item.detail}</p>
@@ -178,7 +181,7 @@ function BreakdownTable({
   return (
     <section className="rounded-lg border border-border bg-surface/70 p-4">
       <div className="mb-4">
-        <h3 className="font-[family-name:var(--font-bricolage)] text-base font-semibold text-fg-strong">{title}</h3>
+        <h3 className="font-(family-name:--font-bricolage) text-base font-semibold text-fg-strong">{title}</h3>
         <p className="mt-2 text-sm leading-6 text-fg-muted">{description}</p>
       </div>
       {rows.length === 0 ? (
@@ -213,19 +216,11 @@ function BreakdownTable({
   );
 }
 
-function UsageChartCard({
-  title,
-  description,
-  children
-}: {
-  title: string;
-  description: string;
-  children: ReactNode;
-}) {
+function UsageChartCard({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return (
     <section className="rounded-lg border border-border bg-surface/70 p-4">
       <div className="mb-4">
-        <h3 className="font-[family-name:var(--font-bricolage)] text-base font-semibold text-fg-strong">{title}</h3>
+        <h3 className="font-(family-name:--font-bricolage) text-base font-semibold text-fg-strong">{title}</h3>
         <p className="mt-2 text-sm leading-6 text-fg-muted">{description}</p>
       </div>
       {children}
@@ -359,7 +354,13 @@ function UsageTimelineChart({
             }}
           />
           <Legend />
-          <Bar yAxisId="sessions" dataKey="sessions" name="sessions" fill="rgba(124, 58, 237, 0.55)" radius={[6, 6, 0, 0]} />
+          <Bar
+            yAxisId="sessions"
+            dataKey="sessions"
+            name="sessions"
+            fill="rgba(124, 58, 237, 0.55)"
+            radius={[6, 6, 0, 0]}
+          />
           <Line
             yAxisId="tokens"
             type="monotone"
@@ -407,7 +408,14 @@ function UsageBreakdownChart({ current }: { current: UsageWindowSummary }) {
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} layout="vertical" margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
           <CartesianGrid stroke="rgba(255,255,255,0.08)" horizontal={false} />
-          <XAxis type="number" stroke="rgba(180,191,210,0.8)" tickLine={false} axisLine={false} tickFormatter={formatCompactInteger} fontSize={12} />
+          <XAxis
+            type="number"
+            stroke="rgba(180,191,210,0.8)"
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={formatCompactInteger}
+            fontSize={12}
+          />
           <YAxis type="category" dataKey="name" hide />
           <Tooltip
             contentStyle={{
@@ -496,7 +504,7 @@ export function UsageBrowser({ refreshQueryKeys, usage }: { refreshQueryKeys: Qu
           <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">Usage</p>
           <RefreshButton loadedAt={usage.loadedAt} queryKeys={refreshQueryKeys} />
         </div>
-        <h2 className="mt-3 font-[family-name:var(--font-bricolage)] text-xl font-semibold tracking-tight text-fg-strong sm:text-2xl">
+        <h2 className="mt-3 font-(family-name:--font-bricolage) text-xl font-semibold tracking-tight text-fg-strong sm:text-2xl">
           Token usage and estimated cost
         </h2>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-fg-muted">
@@ -529,7 +537,7 @@ export function UsageBrowser({ refreshQueryKeys, usage }: { refreshQueryKeys: Qu
             onChange={setAgentId}
             options={createAgentOptions(usage)}
             ariaLabel="Filter usage by agent"
-            className="min-w-[11.5rem] flex-[0_1_12rem]"
+            className="min-w-46 flex-[0_1_12rem]"
           />
           {hasActiveFilters ? (
             <button
@@ -573,7 +581,11 @@ export function UsageBrowser({ refreshQueryKeys, usage }: { refreshQueryKeys: Qu
               title="Usage timeline"
               description="Sessions and token volume over the selected time window."
             >
-              <UsageTimelineChart records={filteredRecords} usageWindowTimestamp={usageWindowTimestamp} windowId={current.id} />
+              <UsageTimelineChart
+                records={filteredRecords}
+                usageWindowTimestamp={usageWindowTimestamp}
+                windowId={current.id}
+              />
             </UsageChartCard>
             <UsageChartCard
               title="Token mix"
@@ -585,7 +597,7 @@ export function UsageBrowser({ refreshQueryKeys, usage }: { refreshQueryKeys: Qu
 
           <section className="rounded-lg border border-border bg-surface/70 p-4">
             <div className="mb-4">
-              <h3 className="font-[family-name:var(--font-bricolage)] text-base font-semibold text-fg-strong">
+              <h3 className="font-(family-name:--font-bricolage) text-base font-semibold text-fg-strong">
                 Token breakdown
               </h3>
               <p className="mt-2 text-sm leading-6 text-fg-muted">
@@ -596,7 +608,7 @@ export function UsageBrowser({ refreshQueryKeys, usage }: { refreshQueryKeys: Qu
               {tokenBreakdown.map((item) => (
                 <article key={item.label} className="rounded-md border border-border/70 bg-bg/40 p-4">
                   <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-faint">{item.label}</p>
-                  <p className="mt-2 font-[family-name:var(--font-bricolage)] text-2xl font-semibold tracking-tight text-fg-strong">
+                  <p className="mt-2 font-(family-name:--font-bricolage) text-2xl font-semibold tracking-tight text-fg-strong">
                     {item.value}
                   </p>
                 </article>

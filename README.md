@@ -17,6 +17,7 @@ Point it at `~/.hermes`. See what's running, what's scheduled, what's stored, an
 A read-only web UI that inspects your local Hermes state directly from disk. No cloud, no auth, no external services — just your files and a browser.
 
 **Surfaces:**
+
 - **Overview** — runtime health, gateway state, connected platforms, warnings, update drift
 - **Sessions** — recent Hermes runs across agents with filtering and search
 - **Cron** — scheduled job status, calendar view, observed run health, recent outputs
@@ -58,6 +59,8 @@ Agent discovery comes from the configured Hermes root. If you have multiple Herm
 
 ## Quick start
 
+Use Node `20.19+` and the repo's pinned `pnpm` version.
+
 ```bash
 git clone https://github.com/shan8851/hermes-console.git
 cd hermes-console
@@ -96,12 +99,12 @@ That serves the built web app and API together from the configured `PORT`, usual
 
 Copy `.env.example` to `.env.local` and adjust as needed.
 
-| Variable                       | Default     | Description                          |
-| ------------------------------ | ----------- | ------------------------------------ |
-| `HERMES_CONSOLE_HERMES_DIR`    | `~/.hermes` | Hermes state root                    |
+| Variable                       | Default     | Description                                                |
+| ------------------------------ | ----------- | ---------------------------------------------------------- |
+| `HERMES_CONSOLE_HERMES_DIR`    | `~/.hermes` | Hermes state root                                          |
 | `HERMES_CONSOLE_WORKSPACE_DIR` | unset       | Optional workspace root for bounded project file discovery |
-| `HERMES_CONSOLE_HERMES_BIN`    | `hermes`    | Hermes CLI path override             |
-| `PORT`                         | `3940`      | API port                             |
+| `HERMES_CONSOLE_HERMES_BIN`    | `hermes`    | Hermes CLI path override                                   |
+| `PORT`                         | `3940`      | API port                                                   |
 
 The defaults assume a standard local Hermes setup under `~/.hermes`.
 Set `HERMES_CONSOLE_WORKSPACE_DIR` if you want the Files view to include high-signal project docs outside the Hermes root.
@@ -139,6 +142,7 @@ Do not expose Hermes Console directly to the public internet without putting pro
 ## Release workflow
 
 Hermes Console uses repo-wide versions and git tags for public OSS releases.
+PRs to `main` also run GitHub Actions checks for formatting, linting, typechecking, tests, and build on Node `20.19+`, so `pnpm release:check` is the local mirror of the same gate.
 
 ```bash
 pnpm release:check
@@ -151,6 +155,7 @@ After that, push `main` and tags, then create the matching GitHub release from t
 ## Contributing
 
 Found a bug? Have a feature idea? Open an issue or PR. Feedback welcome.
+Before opening a PR, run `pnpm release:check` locally so the same formatting, lint, type, test, and build checks are already green.
 
 ## License
 

@@ -43,7 +43,7 @@ export function SessionsIndex({ sessions }: { sessions: HermesSessionSummary[] }
     <section className="rounded-lg border border-border bg-surface/70 p-4 xl:max-h-[58rem] xl:overflow-auto">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h3 className="font-[family-name:var(--font-bricolage)] text-base font-semibold text-fg-strong">
+          <h3 className="font-(family-name:--font-bricolage) text-base font-semibold text-fg-strong">
             Recent sessions
           </h3>
           <p className="mt-2 text-sm leading-6 text-fg-muted">Sessions across all detected agents.</p>
@@ -99,7 +99,11 @@ export function SessionsIndex({ sessions }: { sessions: HermesSessionSummary[] }
                     {session.memoryFlushed != null ? (
                       <span>{session.memoryFlushed ? 'memory flushed' : 'memory live'}</span>
                     ) : null}
-                    {session.endedAt ? <span>ended {formatTimestamp(session.endedAt)}</span> : <span>still active</span>}
+                    {session.endedAt ? (
+                      <span>ended {formatTimestamp(session.endedAt)}</span>
+                    ) : (
+                      <span>still active</span>
+                    )}
                   </div>
                 </div>
 

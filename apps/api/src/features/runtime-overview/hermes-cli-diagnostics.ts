@@ -26,7 +26,10 @@ export function readHermesBinaryPath(env: NodeJS.ProcessEnv = process.env): stri
 }
 
 const readVersionField = (lines: string[], label: string): string | null =>
-  lines.find((line) => line.startsWith(`${label}:`))?.slice(label.length + 1).trim() ?? null;
+  lines
+    .find((line) => line.startsWith(`${label}:`))
+    ?.slice(label.length + 1)
+    .trim() ?? null;
 
 export function parseVersionOutput(rawContent: string | null): HermesVersionSummary {
   if (!rawContent) {

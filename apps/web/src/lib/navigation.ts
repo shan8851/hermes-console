@@ -1,5 +1,15 @@
 import type { LucideIcon } from 'lucide-react';
-import { Brain, ChartColumn, Clock, FileText, LayoutDashboard, MessageSquare, ScrollText, Settings, Zap } from 'lucide-react';
+import {
+  Brain,
+  ChartColumn,
+  Clock,
+  FileText,
+  LayoutDashboard,
+  MessageSquare,
+  ScrollText,
+  Settings,
+  Zap
+} from 'lucide-react';
 
 export type AppRoute = {
   href: string;
