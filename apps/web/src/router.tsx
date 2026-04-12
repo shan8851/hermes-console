@@ -143,7 +143,7 @@ const indexRoute = createRoute({
     Promise.all([
       context.queryClient.ensureQueryData(overviewQueryOptions()),
       context.queryClient.ensureQueryData(inventoryQueryOptions())
-  ]),
+    ]),
   component: HomePage
 });
 

@@ -4,13 +4,7 @@ import { QueryStatusCard } from '@/components/ui/query-status-card';
 import { SessionsBrowser } from '@/features/sessions/components/sessions-browser';
 import { apiQueryKeys, sessionsQueryOptions } from '@/lib/api';
 
-export const SessionsPage = ({
-  initialAgentId,
-  initialQuery
-}: {
-  initialAgentId: string;
-  initialQuery: string;
-}) => {
+export const SessionsPage = ({ initialAgentId, initialQuery }: { initialAgentId: string; initialQuery: string }) => {
   const query = useSuspenseQuery(sessionsQueryOptions());
 
   return (

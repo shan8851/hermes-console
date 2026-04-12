@@ -11,7 +11,9 @@ function formatTimestamp(value: string | null): string {
   return new Date(value).toLocaleString();
 }
 
-function statusClass(status: 'ready' | 'missing' | 'partial' | 'running' | 'stopped' | 'unknown' | 'up_to_date' | 'behind') {
+function statusClass(
+  status: 'ready' | 'missing' | 'partial' | 'running' | 'stopped' | 'unknown' | 'up_to_date' | 'behind'
+) {
   if (status === 'ready' || status === 'running' || status === 'up_to_date') {
     return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200';
   }
@@ -27,15 +29,7 @@ function statusClass(status: 'ready' | 'missing' | 'partial' | 'running' | 'stop
   return 'border-border/80 bg-bg/40 text-fg-muted';
 }
 
-function RuntimeCard({
-  label,
-  value,
-  detail
-}: {
-  label: string;
-  value: string;
-  detail: string;
-}) {
+function RuntimeCard({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
     <article className="rounded-lg border border-border/70 bg-bg/40 p-4">
       <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-faint">{label}</p>
@@ -92,7 +86,7 @@ export function OverviewRuntimeInstall({ overview }: { overview: RuntimeOverview
           update {updateStatusLabel.replace('_', ' ')}
         </span>
       </div>
-      <h3 className="mt-3 font-[family-name:var(--font-bricolage)] text-xl font-semibold tracking-tight text-fg-strong">
+      <h3 className="mt-3 font-(family-name:--font-bricolage) text-xl font-semibold tracking-tight text-fg-strong">
         Hermes runtime and install detail
       </h3>
       <p className="mt-3 max-w-3xl text-sm leading-7 text-fg-muted">
@@ -104,13 +98,13 @@ export function OverviewRuntimeInstall({ overview }: { overview: RuntimeOverview
         <RuntimeCard
           label="root path"
           value={appMeta?.rootPath ?? 'Unavailable'}
-          detail={appMeta?.rootKind ? `Detected via ${appMeta.rootKind.replace('_', ' ')} configuration.` : 'App metadata is currently unavailable.'}
+          detail={
+            appMeta?.rootKind
+              ? `Detected via ${appMeta.rootKind.replace('_', ' ')} configuration.`
+              : 'App metadata is currently unavailable.'
+          }
         />
-        <RuntimeCard
-          label="version"
-          value={runtimeVersionLabel}
-          detail={runtimeVersionDetail}
-        />
+        <RuntimeCard label="version" value={runtimeVersionLabel} detail={runtimeVersionDetail} />
         <RuntimeCard
           label="connected platforms"
           value={connectedPlatforms.length > 0 ? connectedPlatforms.join(', ') : 'None detected'}
@@ -141,7 +135,9 @@ export function OverviewRuntimeInstall({ overview }: { overview: RuntimeOverview
             </div>
             <div>
               <p className="text-sm font-medium text-fg-strong">Update checked</p>
-              <p className="mt-1 text-sm leading-6 text-fg-muted">{formatTimestamp(appMeta?.updateCheckedAt ?? null)}</p>
+              <p className="mt-1 text-sm leading-6 text-fg-muted">
+                {formatTimestamp(appMeta?.updateCheckedAt ?? null)}
+              </p>
             </div>
           </div>
         </article>

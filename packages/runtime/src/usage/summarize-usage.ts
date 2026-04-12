@@ -57,8 +57,7 @@ export function summarizeUsageWindow({
   windowId: UsageWindowId;
   now: Date;
 }): UsageWindowSummary {
-  const window =
-    usageWindowDefinitions.find((candidate) => candidate.id === windowId) ?? usageWindowDefinitions[0]!;
+  const window = usageWindowDefinitions.find((candidate) => candidate.id === windowId) ?? usageWindowDefinitions[0]!;
   const cutoffMs = now.getTime() - window.days * 24 * 60 * 60 * 1000;
   const filtered = records.filter((record) => new Date(record.startedAt).getTime() >= cutoffMs);
   const byModel = aggregateBreakdown(filtered, (record) => ({
@@ -89,13 +88,7 @@ export function summarizeUsageWindow({
   };
 }
 
-export function summarizeUsageWindows({
-  records,
-  now
-}: {
-  records: UsageSessionRecord[];
-  now: Date;
-}) {
+export function summarizeUsageWindows({ records, now }: { records: UsageSessionRecord[]; now: Date }) {
   return {
     windows: usageWindowDefinitions.map((window) =>
       summarizeUsageWindow({

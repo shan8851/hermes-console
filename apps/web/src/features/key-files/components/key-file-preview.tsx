@@ -48,7 +48,12 @@ export function KeyFilePreview({
   if (selectedFileId && selectedFileError) {
     return (
       <section className="rounded-lg border border-border bg-surface/70 p-4">
-        <EmptyState eyebrow="Unreadable" title="This file preview could not be loaded" description={selectedFileError} tone="danger" />
+        <EmptyState
+          eyebrow="Unreadable"
+          title="This file preview could not be loaded"
+          description={selectedFileError}
+          tone="danger"
+        />
       </section>
     );
   }
