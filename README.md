@@ -6,6 +6,11 @@
 
 Point it at `~/.hermes`. See what's running, what's scheduled, what's stored, and what needs attention.
 
+[![CI](https://github.com/shan8851/hermes-console/actions/workflows/ci.yml/badge.svg)](https://github.com/shan8851/hermes-console/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-f5c542.svg)](./LICENSE)
+[![Node >=20.19](https://img.shields.io/badge/node-%3E%3D20.19-3c873a.svg)](./package.json)
+[![local-first](https://img.shields.io/badge/default-local--only-27272a.svg)](#remote-access)
+
 [![Hermes Console tour](./apps/web/public/readme/hermes-console-tour.gif)](./apps/web/public/readme/hermes-console-tour.gif)
 
 </div>
@@ -38,6 +43,13 @@ A read-only web UI that inspects your local Hermes state directly from disk. No 
 ## Why use it
 
 If you run Hermes locally and want to understand your setup without digging through files and CLI output — this does that. One screen, live data, calm UX, no theatre.
+
+What you get after the quick start:
+
+- a first-run overview that explains whether Hermes was found, which gateway state is visible, and how many agents are readable
+- copyable setup commands inside the app for local development, workspace file discovery, and the release check
+- explicit partial-data states instead of fake success when local files, CLI output, logs, or config are missing
+- a security posture that is boring on purpose: localhost bind, no bundled auth, no public exposure by default
 
 Recent polish in `v0.4.1`:
 
@@ -154,7 +166,10 @@ After that, push `main` and tags, then create the matching GitHub release from t
 ## Contributing
 
 Found a bug? Have a feature idea? Open an issue or PR. Feedback welcome.
-Before opening a PR, run `pnpm release:check` locally so the same formatting, lint, type, test, and build checks are already green.
+
+Read `CONTRIBUTING.md` for the product constraints and local workflow. Before opening a PR, run `pnpm release:check` locally so the same formatting, lint, type, test, and build checks are already green.
+
+Security reports should follow `SECURITY.md`; do not paste real Hermes memory, tokens, logs, or private message content into public issues.
 
 ## License
 

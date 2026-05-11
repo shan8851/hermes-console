@@ -35,10 +35,13 @@ export function OverviewHero({
         </span>
         <RefreshButton loadedAt={overview.capturedAt ?? new Date().toISOString()} queryKeys={refreshQueryKeys} />
       </div>
-      <h2 className="mt-4 font-[family-name:var(--font-bricolage)] text-2xl font-semibold tracking-tight text-fg-strong sm:text-3xl">
-        Overview
+      <h2 className="mt-4 max-w-4xl font-[family-name:var(--font-bricolage)] text-3xl font-semibold tracking-tight text-fg-strong sm:text-4xl">
+        Your Hermes setup, made legible.
       </h2>
-      <p className="mt-3 max-w-3xl text-base leading-7 text-fg-muted">{overview.verdict.summary}</p>
+      <p className="mt-3 max-w-3xl text-base leading-7 text-fg-muted">
+        {overview.verdict.summary} Inspect runtime health, sessions, cron, skills, memory, files, usage, and logs
+        without cracking open raw state files.
+      </p>
       <p className="mt-2 text-xs text-fg-faint">
         Snapshot {overview.capturedAt ? new Date(overview.capturedAt).toLocaleString() : 'time unknown'}
         {overview.doctorIssueCount > 0

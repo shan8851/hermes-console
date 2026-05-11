@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Added a first-run OSS readiness panel to the Overview with copyable setup, workspace, and release-check commands.
+- Reframed the Overview hero around the product promise so new users can understand the app before reading implementation detail.
+- Added `CONTRIBUTING.md` and `SECURITY.md`, plus README badges and contribution/security guidance for public OSS use.
+
 ## 0.4.1 - 2026-05-11
 
 - Updated Cron reads for current Hermes job metadata, including script-only/no-agent jobs, chained `context_from` jobs, per-job `enabled_toolsets`, and `workdir`.
