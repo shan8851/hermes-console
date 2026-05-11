@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.5.0 - 2026-05-11
+
 - Added a global profile scope selector that carries `?profile=` across profile-aware routes and keeps legacy session `?agent=` links working.
 - Scoped sessions, cron, usage, logs, memory, files, config, skills, and Overview activity to selected Hermes profiles where the backing data supports it.
 - Added a calmer Overview attention centre that prioritizes actionable cron, runtime, memory, config, skills, and log signals without promoting optional missing files as primary warnings.
