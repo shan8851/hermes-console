@@ -39,12 +39,11 @@ A read-only web UI that inspects your local Hermes state directly from disk. No 
 
 If you run Hermes locally and want to understand your setup without digging through files and CLI output — this does that. One screen, live data, calm UX, no theatre.
 
-Recent polish in `v0.4.0`:
+Recent polish in `v0.4.1`:
 
-- a new Config page for inspecting `config.yaml` across root and profile agents
-- stronger runtime/install detail on Overview, including clearer Hermes CLI version visibility
-- a proper GitHub Actions CI gate for PRs and pushes to `main`
-- expanded config/runtime test coverage to keep the new read surfaces honest
+- cron details now show newer Hermes execution metadata like script-only jobs, `workdir`, `context_from`, and per-job toolsets
+- stronger alignment with current Hermes scheduler state without needing to crack open `jobs.json`
+- coverage for the newer cron metadata fields in the normalizer
 
 ## Running Hermes Console
 
@@ -146,8 +145,8 @@ PRs to `main` also run GitHub Actions checks for formatting, linting, typechecki
 
 ```bash
 pnpm release:check
-git commit -m "chore(release): prepare v0.4.0"
-git tag v0.4.0
+git commit -m "chore(release): prepare vX.Y.Z"
+git tag vX.Y.Z
 ```
 
 After that, push `main` and tags, then create the matching GitHub release from the `CHANGELOG.md` notes.

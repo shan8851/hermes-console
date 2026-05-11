@@ -257,6 +257,14 @@ export function CronDetailView({ detail }: { detail: HermesCronJobDetail }) {
             <MetadataBlock label="schedule" value={job.scheduleDisplay} />
             {job.scheduleExpression ? <MetadataBlock label="expression" value={job.scheduleExpression} /> : null}
             {job.scriptPath ? <MetadataBlock label="playbook" value={job.scriptPath} /> : null}
+            <MetadataBlock label="execution mode" value={job.noAgent ? 'script-only / no agent' : 'agent'} />
+            {job.workdir ? <MetadataBlock label="workdir" value={job.workdir} /> : null}
+            {job.enabledToolsets.length > 0 ? (
+              <MetadataBlock label="enabled toolsets" value={job.enabledToolsets.join(', ')} />
+            ) : null}
+            {job.contextFrom.length > 0 ? (
+              <MetadataBlock label="context from" value={job.contextFrom.join(', ')} />
+            ) : null}
             {job.model ? <MetadataBlock label="model" value={job.model} /> : null}
             {job.provider ? <MetadataBlock label="provider" value={job.provider} /> : null}
             {job.baseUrl ? <MetadataBlock label="base url" value={job.baseUrl} /> : null}

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1 - 2026-05-11
+
+- Updated Cron reads for current Hermes job metadata, including script-only/no-agent jobs, chained `context_from` jobs, per-job `enabled_toolsets`, and `workdir`.
+- Surfaced the new cron execution metadata on the cron detail page so scheduler behaviour is visible without opening `jobs.json`.
+- Added coverage for the newer cron job fields in the cron normalizer.
+
 ## 0.4.0 - 2026-04-13
 
 - Added a new Config page with per-agent `config.yaml` inspection, root/profile tabs, raw YAML syntax highlighting, and explicit missing or unreadable states.

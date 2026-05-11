@@ -25,6 +25,10 @@ export type CronJobRecord = {
   provider: string | null;
   baseUrl: string | null;
   scriptPath: string | null;
+  noAgent: boolean;
+  contextFrom: string[];
+  enabledToolsets: string[];
+  workdir: string | null;
   createdAt: string | null;
   nextRunAt: string | null;
   lastRunAt: string | null;
@@ -144,6 +148,10 @@ export type CronJobSourceRecord = {
   provider?: string | null | undefined;
   base_url?: string | null | undefined;
   script?: string | null | undefined;
+  no_agent?: boolean | undefined;
+  context_from?: string[] | null | undefined;
+  enabled_toolsets?: string[] | null | undefined;
+  workdir?: string | null | undefined;
   schedule?: CronJobScheduleSource | null | undefined;
   repeat?: CronJobRepeatSource | null | undefined;
   origin?: CronJobOriginSource | null | undefined;
@@ -178,6 +186,10 @@ export const cronJobRecordSchema = z.object({
   provider: z.string().nullable(),
   baseUrl: z.string().nullable(),
   scriptPath: z.string().nullable(),
+  noAgent: z.boolean(),
+  contextFrom: z.array(z.string()),
+  enabledToolsets: z.array(z.string()),
+  workdir: z.string().nullable(),
   createdAt: z.string().nullable(),
   nextRunAt: z.string().nullable(),
   lastRunAt: z.string().nullable(),
@@ -261,6 +273,10 @@ export const cronJobSourceRecordSchema = z.object({
   provider: z.string().nullable().optional(),
   base_url: z.string().nullable().optional(),
   script: z.string().nullable().optional(),
+  no_agent: z.boolean().optional(),
+  context_from: z.array(z.string()).nullable().optional(),
+  enabled_toolsets: z.array(z.string()).nullable().optional(),
+  workdir: z.string().nullable().optional(),
   schedule: cronJobScheduleSourceSchema.nullable().optional(),
   repeat: cronJobRepeatSourceSchema.nullable().optional(),
   origin: cronJobOriginSourceSchema.nullable().optional()

@@ -25,6 +25,11 @@ describe('normalizeCronJobs', () => {
             last_error: 'playbook failed',
             deliver: 'local',
             prompt: 'Run nightly refresh',
+            script: 'nightly-refresh.py',
+            no_agent: true,
+            context_from: ['upstream-job'],
+            enabled_toolsets: ['terminal', 'file'],
+            workdir: '/tmp/workspace',
             schedule: {
               kind: 'cron',
               display: '15 23 * * *',
@@ -95,6 +100,11 @@ describe('normalizeCronJobs', () => {
       lastFailedRunAt: '2026-04-12T22:15:00.000Z',
       latestOutputState: 'silent',
       recentOutputCount: 1,
+      scriptPath: 'nightly-refresh.py',
+      noAgent: true,
+      contextFrom: ['upstream-job'],
+      enabledToolsets: ['terminal', 'file'],
+      workdir: '/tmp/workspace',
       attentionLevel: 'critical'
     });
     expect(summaries[0]?.upcomingRuns[0]?.scheduledAt).toBe('2026-04-13T22:15:00.000Z');
