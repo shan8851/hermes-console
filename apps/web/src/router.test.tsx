@@ -846,6 +846,84 @@ describe('selected preview routes', () => {
     expect(await screen.findByText('Session History')).toBeTruthy();
     expect(screen.getByText('Nigel session')).toBeTruthy();
     expect(screen.queryByText('Default session')).toBeNull();
+    expect(screen.getByText('Nigel session').closest('a')?.getAttribute('href')).toBe(
+      '/sessions/nigel/nigel-session-1'
+    );
+  });
+
+  it('loads a session detail route with transcript content', async () => {
+    const session = createSessionSummary({
+      agentId: 'default',
+      agentLabel: 'Default',
+      title: 'Detail route session'
+    });
+
+    await renderRoute({
+      initialEntry: '/sessions/default/default-session-1',
+      responses: {
+        '/api/meta/app': {
+          body: appMeta
+        },
+        '/api/sessions/default/default-session-1': {
+          body: createSnapshotEnvelope({
+            session,
+            messages: [
+              {
+                id: 1,
+                sessionId: 'default-session-1',
+                role: 'assistant',
+                content: 'Hello transcript',
+                contentCharCount: 16,
+                contentOmittedCharCount: 0,
+                toolCallId: null,
+                toolCalls: [
+                  {
+                    id: 'call-1',
+                    name: 'exec_command',
+                    argumentsPreview: '{"cmd":"pwd"}'
+                  }
+                ],
+                toolName: null,
+                finishReason: 'tool_calls',
+                timestamp: isoTimestamp,
+                tokenCount: 8
+              }
+            ],
+            transcript: {
+              totalMessageCount: 1,
+              returnedMessageCount: 1,
+              omittedMessageCount: 0,
+              contentCharCount: 16,
+              returnedContentCharCount: 16,
+              omittedContentCharCount: 0,
+              messageHeadCount: 50,
+              messageTailCount: 200,
+              maxMessageContentChars: 6000
+            },
+            stats: {
+              durationMs: 1_000,
+              messageCount: 1,
+              toolCallCount: 1,
+              inputTokens: 2,
+              outputTokens: 3,
+              cacheReadTokens: 0,
+              cacheWriteTokens: 0,
+              reasoningTokens: 0,
+              totalTokens: 5,
+              estimatedCostUsd: 0.01,
+              actualCostUsd: null
+            },
+            lineage: {
+              parentSessionId: null
+            }
+          })
+        }
+      }
+    });
+
+    expect(await screen.findByRole('heading', { name: 'Detail route session' })).toBeTruthy();
+    expect(screen.getByText('Message timeline')).toBeTruthy();
+    expect(screen.getByText('Hello transcript')).toBeTruthy();
   });
 
   it('falls back calmly when a sessions profile query is unknown', async () => {

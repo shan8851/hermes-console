@@ -242,10 +242,10 @@ export function AppCommandPalette({
         onSelect: () => {
           onClose();
           void router.navigate({
-            to: '/sessions',
-            search: {
-              profile: session.agentId,
-              q: session.sessionId
+            to: '/sessions/$agentId/$sessionId',
+            params: {
+              agentId: session.agentId,
+              sessionId: session.sessionId
             }
           });
         }

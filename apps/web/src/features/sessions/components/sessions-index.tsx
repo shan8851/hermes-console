@@ -1,3 +1,5 @@
+import { Link } from '@tanstack/react-router';
+
 import type { HermesSessionSummary } from '@hermes-console/runtime';
 
 function formatTimestamp(value: string): string {
@@ -59,7 +61,15 @@ export function SessionsIndex({ sessions }: { sessions: HermesSessionSummary[] }
           const secondaryContext = [session.chatType, session.cronJobName].filter(Boolean).join(' · ');
 
           return (
-            <article key={session.id} className="rounded-md border border-border/70 bg-bg/40 p-3">
+            <Link
+              key={session.id}
+              params={{
+                agentId: session.agentId,
+                sessionId: session.sessionId
+              }}
+              to="/sessions/$agentId/$sessionId"
+              className="block rounded-md border border-border/70 bg-bg/40 p-3 transition-colors hover:border-accent/40 hover:bg-accent/5"
+            >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -112,7 +122,7 @@ export function SessionsIndex({ sessions }: { sessions: HermesSessionSummary[] }
                   <p className="mt-1">started {formatTimestamp(session.startedAt)}</p>
                 </div>
               </div>
-            </article>
+            </Link>
           );
         })}
       </div>

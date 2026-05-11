@@ -398,4 +398,35 @@ describe('AppCommandPalette', () => {
       });
     });
   });
+
+  it('navigates session results to the session detail route', async () => {
+    renderPalette();
+
+    fireEvent.keyDown(window, {
+      key: 'k',
+      ctrlKey: true
+    });
+
+    const paletteInput = await screen.findByPlaceholderText(
+      'Search routes, profiles, sessions, cron jobs, skills, and files'
+    );
+    fireEvent.change(paletteInput, {
+      target: {
+        value: 'debug session'
+      }
+    });
+    fireEvent.keyDown(paletteInput, {
+      key: 'Enter'
+    });
+
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledWith({
+        params: {
+          agentId: 'default',
+          sessionId: 'session-1'
+        },
+        to: '/sessions/$agentId/$sessionId'
+      });
+    });
+  });
 });
