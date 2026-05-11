@@ -9,6 +9,7 @@ import {
   hermesCronJobDetailSchema,
   hermesLogDetailSchema,
   hermesLogsIndexSchema,
+  sessionDetailSchema,
   hermesSessionsIndexSchema,
   hermesUsageSummarySchema,
   inventoryInstallationSchema,
@@ -24,6 +25,7 @@ import {
   type AppMeta,
   type DiagnosticsResponse,
   type HermesMemoryIndex,
+  type SessionDetail,
   type HermesUsageSummary,
   type KeyFileContentData,
   type KeyFilesData,
@@ -117,6 +119,7 @@ export const apiQueryKeys = {
   memory: ['memory'] as const,
   overview: ['overview'] as const,
   sessions: ['sessions'] as const,
+  sessionDetail: (agentId: string, sessionId: string) => ['session-detail', agentId, sessionId] as const,
   fileContent: (fileId: string) => ['file-content', fileId] as const,
   skillDetail: (skillId: string) => ['skill-detail', skillId] as const,
   skillLinkedFileContent: (skillId: string, fileId: string) => ['skill-linked-file-content', skillId, fileId] as const,
@@ -181,6 +184,16 @@ export const sessionsQueryOptions = () =>
       fetchSnapshot({
         dataSchema: hermesSessionsIndexSchema,
         path: '/api/sessions'
+      })
+  });
+
+export const sessionDetailQueryOptions = ({ agentId, sessionId }: { agentId: string; sessionId: string }) =>
+  queryOptions({
+    queryKey: apiQueryKeys.sessionDetail(agentId, sessionId),
+    queryFn: () =>
+      fetchSnapshot({
+        dataSchema: sessionDetailSchema,
+        path: `/api/sessions/${encodeURIComponent(agentId)}/${encodeURIComponent(sessionId)}`
       })
   });
 
@@ -294,4 +307,4 @@ export const configQueryOptions = () =>
       })
   });
 
-export type { KeyFileContentData, KeyFilesData, SnapshotEnvelope };
+export type { KeyFileContentData, KeyFilesData, SessionDetail, SnapshotEnvelope };

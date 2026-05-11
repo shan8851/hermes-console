@@ -14,6 +14,7 @@ import { readHermesMemoryQuery } from '@/features/memory/query-memory';
 import { readHermesCliDiagnostics, readHermesVersionSummary } from '@/features/runtime-overview/hermes-cli-diagnostics';
 import { readRuntimeOverviewQuery } from '@/features/runtime-overview/query-runtime-overview';
 import { readShellStatusQuery } from '@/features/runtime-overview/query-shell-status';
+import { readHermesSessionDetailQuery } from '@/features/sessions/query-session-detail';
 import { readHermesSessionsQuery } from '@/features/sessions/query-sessions';
 import { readSkillDocumentDetailQuery, readSkillLinkedFileContentQuery } from '@/features/skills/query-skill-detail';
 import { readHermesSkillsQuery } from '@/features/skills/query-skills';
@@ -221,6 +222,23 @@ export const createApp = ({ config }: { config: ServerConfig }) => {
       })
     )
   );
+
+  app.get('/api/sessions/:agentId/:sessionId', (context) => {
+    const detailResult = readHermesSessionDetailQuery({
+      agentId: context.req.param('agentId'),
+      sessionId: context.req.param('sessionId')
+    });
+
+    if (detailResult == null) {
+      return notFound(`Session detail not found for ${context.req.param('agentId')}/${context.req.param('sessionId')}`);
+    }
+
+    return context.json(
+      createLiveSnapshotEnvelope({
+        result: detailResult
+      })
+    );
+  });
 
   app.get('/api/logs', (context) =>
     context.json(

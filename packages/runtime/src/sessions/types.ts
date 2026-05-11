@@ -60,7 +60,11 @@ export type AgentSessionMessageRecord = {
   sessionId: string;
   role: string;
   content: string | null;
+  contentCharCount: number | null;
+  toolCallId: string | null;
+  toolCallsJson: string | null;
   toolName: string | null;
+  finishReason: string | null;
   timestamp: string;
   tokenCount: number | null;
 };
@@ -82,6 +86,7 @@ export type HermesSessionSummary = {
   model: string | null;
   startedAt: string;
   endedAt: string | null;
+  endReason: string | null;
   lastActivityAt: string;
   messageCount: number;
   toolCallCount: number;
@@ -99,6 +104,61 @@ export type HermesSessionsIndex = {
   sessions: HermesSessionSummary[];
   agentCount: number;
   agentsWithSessions: number;
+};
+
+export type SessionToolCallSummary = {
+  id: string | null;
+  name: string | null;
+  argumentsPreview: string | null;
+};
+
+export type SessionMessage = {
+  id: number;
+  sessionId: string;
+  role: string;
+  content: string | null;
+  contentCharCount: number | null;
+  contentOmittedCharCount: number;
+  toolCallId: string | null;
+  toolCalls: SessionToolCallSummary[];
+  toolName: string | null;
+  finishReason: string | null;
+  timestamp: string;
+  tokenCount: number | null;
+};
+
+export type SessionDetailStats = {
+  durationMs: number | null;
+  messageCount: number;
+  toolCallCount: number;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+  reasoningTokens: number;
+  totalTokens: number;
+  estimatedCostUsd: number | null;
+  actualCostUsd: number | null;
+};
+
+export type SessionDetail = {
+  session: HermesSessionSummary;
+  messages: SessionMessage[];
+  transcript: {
+    totalMessageCount: number;
+    returnedMessageCount: number;
+    omittedMessageCount: number;
+    contentCharCount: number;
+    returnedContentCharCount: number;
+    omittedContentCharCount: number;
+    messageHeadCount: number;
+    messageTailCount: number;
+    maxMessageContentChars: number;
+  };
+  stats: SessionDetailStats;
+  lineage: {
+    parentSessionId: string | null;
+  };
 };
 
 export type MessagingSessionOriginSource = {
@@ -217,7 +277,11 @@ export const agentSessionMessageRecordSchema = z.object({
   sessionId: z.string(),
   role: z.string(),
   content: z.string().nullable(),
+  contentCharCount: z.number().nullable(),
+  toolCallId: z.string().nullable(),
+  toolCallsJson: z.string().nullable(),
   toolName: z.string().nullable(),
+  finishReason: z.string().nullable(),
   timestamp: z.string(),
   tokenCount: z.number().nullable()
 });
@@ -239,6 +303,11 @@ export const hermesSessionSummarySchema = z.object({
   model: z.string().nullable(),
   startedAt: z.string(),
   endedAt: z.string().nullable(),
+  endReason: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((value) => value ?? null),
   lastActivityAt: z.string(),
   messageCount: z.number(),
   toolCallCount: z.number(),
@@ -256,4 +325,59 @@ export const hermesSessionsIndexSchema = z.object({
   sessions: z.array(hermesSessionSummarySchema),
   agentCount: z.number(),
   agentsWithSessions: z.number()
+});
+
+export const sessionToolCallSummarySchema = z.object({
+  id: z.string().nullable(),
+  name: z.string().nullable(),
+  argumentsPreview: z.string().nullable()
+});
+
+export const sessionMessageSchema = z.object({
+  id: z.number(),
+  sessionId: z.string(),
+  role: z.string(),
+  content: z.string().nullable(),
+  contentCharCount: z.number().nullable(),
+  contentOmittedCharCount: z.number(),
+  toolCallId: z.string().nullable(),
+  toolCalls: z.array(sessionToolCallSummarySchema),
+  toolName: z.string().nullable(),
+  finishReason: z.string().nullable(),
+  timestamp: z.string(),
+  tokenCount: z.number().nullable()
+});
+
+export const sessionDetailStatsSchema = z.object({
+  durationMs: z.number().nullable(),
+  messageCount: z.number(),
+  toolCallCount: z.number(),
+  inputTokens: z.number(),
+  outputTokens: z.number(),
+  cacheReadTokens: z.number(),
+  cacheWriteTokens: z.number(),
+  reasoningTokens: z.number(),
+  totalTokens: z.number(),
+  estimatedCostUsd: z.number().nullable(),
+  actualCostUsd: z.number().nullable()
+});
+
+export const sessionDetailSchema = z.object({
+  session: hermesSessionSummarySchema,
+  messages: z.array(sessionMessageSchema),
+  transcript: z.object({
+    totalMessageCount: z.number(),
+    returnedMessageCount: z.number(),
+    omittedMessageCount: z.number(),
+    contentCharCount: z.number(),
+    returnedContentCharCount: z.number(),
+    omittedContentCharCount: z.number(),
+    messageHeadCount: z.number(),
+    messageTailCount: z.number(),
+    maxMessageContentChars: z.number()
+  }),
+  stats: sessionDetailStatsSchema,
+  lineage: z.object({
+    parentSessionId: z.string().nullable()
+  })
 });

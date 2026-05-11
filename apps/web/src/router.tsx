@@ -21,6 +21,7 @@ import {
   logsQueryOptions,
   memoryQueryOptions,
   overviewQueryOptions,
+  sessionDetailQueryOptions,
   sessionsQueryOptions,
   skillDetailQueryOptions,
   skillLinkedFileContentQueryOptions,
@@ -34,6 +35,7 @@ import { FilesPage } from '@/routes/pages/files-page';
 import { HomePage } from '@/routes/pages/home-page';
 import { LogsPage } from '@/routes/pages/logs-page';
 import { MemoryPage } from '@/routes/pages/memory-page';
+import { SessionDetailPage } from '@/routes/pages/session-detail-page';
 import { SessionsPage } from '@/routes/pages/sessions-page';
 import { SkillDetailPage } from '@/routes/pages/skill-detail-page';
 import { SkillsPage } from '@/routes/pages/skills-page';
@@ -180,6 +182,23 @@ const sessionsRoute = createRoute({
     const profileScope = normalizeProfileScope(search.profile ?? search.agent);
 
     return <SessionsPage initialQuery={search.q ?? ''} profileScope={profileScope} />;
+  }
+});
+
+const sessionDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/sessions/$agentId/$sessionId',
+  loader: ({ context, params }) =>
+    context.queryClient.ensureQueryData(
+      sessionDetailQueryOptions({
+        agentId: params.agentId,
+        sessionId: params.sessionId
+      })
+    ),
+  component: () => {
+    const params = sessionDetailRoute.useParams();
+
+    return <SessionDetailPage agentId={params.agentId} sessionId={params.sessionId} />;
   }
 });
 
@@ -372,6 +391,7 @@ const configRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   indexRoute,
   sessionsRoute,
+  sessionDetailRoute,
   cronRoute,
   cronDetailRoute,
   logsRoute,

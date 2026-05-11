@@ -12,7 +12,11 @@ vi.mock('node:child_process', () => ({
   execFileSync: execFileSyncMock
 }));
 
-import { readStateDbMessagesResult, readStateDbSessionsResult } from '@/features/sessions/node-session-sources';
+import {
+  readStateDbBoundedMessagesResult,
+  readStateDbMessagesResult,
+  readStateDbSessionsResult
+} from '@/features/sessions/node-session-sources';
 
 describe('readStateDbSessionsResult', () => {
   afterEach(() => {
@@ -117,7 +121,11 @@ describe('readStateDbSessionsResult', () => {
           sessionId: 'session-1',
           role: 'assistant',
           content: 'hello',
+          contentCharCount: 5,
+          toolCallId: null,
+          toolCallsJson: null,
           toolName: null,
+          finishReason: null,
           timestamp: '2025-01-01T00:00:00Z',
           tokenCount: 12
         },
@@ -126,7 +134,11 @@ describe('readStateDbSessionsResult', () => {
           sessionId: 'session-1',
           role: 'assistant',
           content: 'broken',
+          contentCharCount: 6,
+          toolCallId: null,
+          toolCallsJson: null,
           toolName: null,
+          finishReason: null,
           timestamp: null,
           tokenCount: 12
         }
@@ -146,5 +158,67 @@ describe('readStateDbSessionsResult', () => {
     );
     expect(result.issues[0]?.detail).not.toContain('[');
     expect(result.issues[0]?.detail).not.toContain('path');
+  });
+
+  it('reads bounded message windows with omission metadata', () => {
+    const agentRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-console-sessions-'));
+    fs.writeFileSync(path.join(agentRoot, 'state.db'), '');
+    execFileSyncMock.mockReturnValueOnce(
+      JSON.stringify({
+        messages: [
+          {
+            id: 1,
+            sessionId: 'session-1',
+            role: 'user',
+            content: 'first',
+            contentCharCount: 5,
+            toolCallId: null,
+            toolCallsJson: null,
+            toolName: null,
+            finishReason: null,
+            timestamp: '2025-01-01T00:00:00Z',
+            tokenCount: null
+          },
+          {
+            id: 300,
+            sessionId: 'session-1',
+            role: 'assistant',
+            content: 'last',
+            contentCharCount: 4,
+            toolCallId: null,
+            toolCallsJson: null,
+            toolName: null,
+            finishReason: null,
+            timestamp: '2025-01-01T01:00:00Z',
+            tokenCount: null
+          }
+        ],
+        totalMessageCount: 300,
+        returnedMessageCount: 2,
+        omittedMessageCount: 298,
+        contentCharCount: 900,
+        selectedContentCharCount: 9,
+        omittedRowContentCharCount: 891,
+        messageHeadCount: 1,
+        messageTailCount: 1
+      })
+    );
+
+    const result = readStateDbBoundedMessagesResult({
+      agentRootPath: agentRoot,
+      sessionId: 'session-1',
+      messageHeadCount: 1,
+      messageTailCount: 1
+    });
+
+    expect(execFileSyncMock).toHaveBeenCalledWith(
+      'python3',
+      ['-c', expect.any(String), path.join(agentRoot, 'state.db'), 'messages_bounded', 'session-1', '1', '1', '6000'],
+      expect.any(Object)
+    );
+    expect(result.issues).toEqual([]);
+    expect(result.data.messages.map((message) => message.id)).toEqual([1, 300]);
+    expect(result.data.omittedMessageCount).toBe(298);
+    expect(result.data.omittedRowContentCharCount).toBe(891);
   });
 });

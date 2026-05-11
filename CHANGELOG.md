@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added read-only session detail pages with transcript timelines, token/cost breakdowns, lineage metadata, and direct links from session search/list results.
+
 ## 0.5.0 - 2026-05-11
 
 - Added a global profile scope selector that carries `?profile=` across profile-aware routes and keeps legacy session `?agent=` links working.
