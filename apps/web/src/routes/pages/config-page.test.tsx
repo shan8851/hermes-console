@@ -4,10 +4,74 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ConfigPage } from '@/routes/pages/config-page';
+import { ALL_PROFILES_SCOPE, type ProfileScopeId } from '@/features/profile-scope/profile-scope';
 
 import type { HermesConfigFile, HermesQueryIssue, HermesQueryStatus } from '@hermes-console/runtime';
 
 const isoTimestamp = '2026-04-12T23:00:00.000Z';
+
+const createInventoryEnvelope = ({
+  agents = [
+    {
+      id: 'default',
+      label: 'Default',
+      rootPath: '/tmp/hermes',
+      source: 'root' as const,
+      presence: {
+        config: true,
+        cron: true,
+        memory: true,
+        sessions: true,
+        skills: true,
+        stateDb: true
+      },
+      isAvailable: true
+    },
+    {
+      id: 'alpha',
+      label: 'alpha',
+      rootPath: '/tmp/hermes/profiles/alpha',
+      source: 'profile' as const,
+      presence: {
+        config: true,
+        cron: true,
+        memory: true,
+        sessions: true,
+        skills: true,
+        stateDb: true
+      },
+      isAvailable: true
+    }
+  ]
+} = {}) => ({
+  data: {
+    paths: {
+      hermesRoot: {
+        label: 'hermes_root',
+        path: '/tmp/hermes',
+        kind: 'default',
+        envKey: 'HERMES_CONSOLE_HERMES_DIR'
+      },
+      workspaceRoot: {
+        label: 'workspace_root',
+        path: '/tmp/workspace',
+        kind: 'default',
+        envKey: 'HERMES_CONSOLE_WORKSPACE_DIR'
+      }
+    },
+    hermesRootExists: true,
+    profilesRootPath: '/tmp/hermes/profiles',
+    profilesRootExists: true,
+    agents,
+    availableAgentCount: agents.filter((agent) => agent.isAvailable).length,
+    status: 'ready'
+  },
+  issues: [],
+  meta: {
+    capturedAt: isoTimestamp,
+    dataStatus: 'ready' as const
+  }
+});
 
 const createConfigEnvelope = ({
   files,
@@ -29,25 +93,35 @@ const createConfigEnvelope = ({
 });
 
 const renderConfigPage = ({
+  agents,
   files,
   issues,
+  profileScope = ALL_PROFILES_SCOPE,
   status
 }: {
+  agents?: ReturnType<typeof createInventoryEnvelope>['data']['agents'];
   files: HermesConfigFile[];
   issues: HermesQueryIssue[];
+  profileScope?: ProfileScopeId;
   status: HermesQueryStatus;
 }) => {
   vi.stubGlobal(
     'fetch',
-    vi.fn(
-      async () =>
-        new Response(JSON.stringify(createConfigEnvelope({ files, issues, status })), {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        })
-    )
+    vi.fn(async (input: RequestInfo | URL) => {
+      const rawUrl = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+      const url = new URL(rawUrl, 'http://localhost');
+      const body =
+        url.pathname === '/api/inventory'
+          ? createInventoryEnvelope({ agents })
+          : createConfigEnvelope({ files, issues, status });
+
+      return new Response(JSON.stringify(body), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+    })
   );
 
   const queryClient = new QueryClient({
@@ -61,7 +135,7 @@ const renderConfigPage = ({
   render(
     <QueryClientProvider client={queryClient}>
       <Suspense fallback={<div>Loading</div>}>
-        <ConfigPage />
+        <ConfigPage profileScope={profileScope} />
       </Suspense>
     </QueryClientProvider>
   );
@@ -71,6 +145,29 @@ describe('ConfigPage', () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
+  });
+
+  it('does not fall back to all configs when a known selected profile has no config payload row', async () => {
+    renderConfigPage({
+      profileScope: 'alpha',
+      files: [
+        {
+          agentId: 'default',
+          agentLabel: 'Default',
+          agentSource: 'root',
+          path: '/tmp/hermes/config.yaml',
+          content: 'model:\n  default: gpt-5.4\n',
+          readStatus: 'ready',
+          readDetail: null
+        }
+      ],
+      issues: [],
+      status: 'ready'
+    });
+
+    expect(await screen.findByText('No config files found for the active profile scope.')).toBeTruthy();
+    expect(screen.queryByText('/tmp/hermes/config.yaml')).toBeNull();
+    expect(screen.queryByText('model:')).toBeNull();
   });
 
   it('shows a missing-config state when the selected agent has no config.yaml', async () => {

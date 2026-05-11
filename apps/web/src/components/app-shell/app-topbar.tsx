@@ -1,7 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { Menu, Search } from 'lucide-react';
 
+import { ProfileScopeSelector } from '@/features/profile-scope/profile-scope-selector';
 import { appMetaQueryOptions } from '@/lib/api';
+
+import type { ProfileScopeId } from '@/features/profile-scope/profile-scope';
 
 function gatewayClass(state: string) {
   if (state === 'running') {
@@ -28,7 +31,7 @@ function SearchButton({ onOpenCommandPalette }: { onOpenCommandPalette: () => vo
     <button
       type="button"
       onClick={onOpenCommandPalette}
-      className="inline-flex min-w-0 shrink-0 items-center gap-2 rounded-xl border border-border/70 bg-bg/35 px-3 py-2.5 text-sm text-fg-muted transition-colors hover:border-accent/35 hover:text-fg"
+      className="inline-flex min-w-0 shrink-0 items-center gap-2 rounded-xl border border-border/70 bg-surface/65 px-3 py-2.5 text-sm text-fg-muted outline-none transition-colors hover:border-accent/35 hover:text-fg focus:border-accent/50"
     >
       <Search className="h-4 w-4 shrink-0" />
       <span className="truncate">Search</span>
@@ -110,9 +113,13 @@ function RuntimeChips({
 }
 
 export function AppTopbar({
+  fallbackProfileScope,
+  onFallbackProfileScopeChange,
   onOpenCommandPalette,
   onOpenSidebar
 }: {
+  fallbackProfileScope: ProfileScopeId;
+  onFallbackProfileScopeChange: (scope: ProfileScopeId) => void;
   onOpenCommandPalette: () => void;
   onOpenSidebar: () => void;
 }) {
@@ -136,7 +143,13 @@ export function AppTopbar({
               <span className="rounded-md border border-border/80 bg-bg/40 px-2 py-1">loading runtime</span>
             </div>
           </div>
-          <SearchButton onOpenCommandPalette={onOpenCommandPalette} />
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+            <SearchButton onOpenCommandPalette={onOpenCommandPalette} />
+            <ProfileScopeSelector
+              fallbackProfileScope={fallbackProfileScope}
+              onFallbackProfileScopeChange={onFallbackProfileScopeChange}
+            />
+          </div>
         </div>
       </header>
     );
@@ -159,7 +172,13 @@ export function AppTopbar({
               </span>
             </div>
           </div>
-          <SearchButton onOpenCommandPalette={onOpenCommandPalette} />
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+            <SearchButton onOpenCommandPalette={onOpenCommandPalette} />
+            <ProfileScopeSelector
+              fallbackProfileScope={fallbackProfileScope}
+              onFallbackProfileScopeChange={onFallbackProfileScopeChange}
+            />
+          </div>
         </div>
       </header>
     );
@@ -186,7 +205,13 @@ export function AppTopbar({
             updateStatus={data.updateStatus}
           />
         </div>
-        <SearchButton onOpenCommandPalette={onOpenCommandPalette} />
+        <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+          <SearchButton onOpenCommandPalette={onOpenCommandPalette} />
+          <ProfileScopeSelector
+            fallbackProfileScope={fallbackProfileScope}
+            onFallbackProfileScopeChange={onFallbackProfileScopeChange}
+          />
+        </div>
       </div>
     </header>
   );

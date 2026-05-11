@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Added a global profile scope selector that carries `?profile=` across profile-aware routes and keeps legacy session `?agent=` links working.
+- Scoped sessions, cron, usage, logs, memory, files, config, skills, and Overview activity to selected Hermes profiles where the backing data supports it.
+- Clarified Overview behaviour so activity cards and agent lists can be profile-scoped while runtime, gateway, update, platform, and diagnostics state remain global.
+- Flattened the topbar search/profile controls for a cleaner shell without redundant profile labels.
+- Added route/component coverage for profile scoping, unknown-profile fallback, scoped Overview activity, and config empty states.
+
 ## 0.4.1 - 2026-05-11
 
 - Updated Cron reads for current Hermes job metadata, including script-only/no-agent jobs, chained `context_from` jobs, per-job `enabled_toolsets`, and `workdir`.

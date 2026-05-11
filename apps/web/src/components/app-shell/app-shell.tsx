@@ -4,10 +4,12 @@ import type { ReactNode } from 'react';
 import { AppCommandPalette } from '@/components/app-shell/app-command-palette';
 import { AppSidebar } from '@/components/app-shell/app-sidebar';
 import { AppTopbar } from '@/components/app-shell/app-topbar';
+import { ALL_PROFILES_SCOPE, type ProfileScopeId } from '@/features/profile-scope/profile-scope';
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [fallbackProfileScope, setFallbackProfileScope] = useState<ProfileScopeId>(ALL_PROFILES_SCOPE);
 
   return (
     <div className="min-h-screen bg-bg text-fg xl:grid xl:grid-cols-[14rem_minmax(0,1fr)]">
@@ -16,6 +18,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
       <div className="min-w-0">
         <AppTopbar
+          fallbackProfileScope={fallbackProfileScope}
+          onFallbackProfileScopeChange={setFallbackProfileScope}
           onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
           onOpenSidebar={() => setIsSidebarOpen(true)}
         />
@@ -54,8 +58,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       ) : null}
 
       <AppCommandPalette
+        fallbackProfileScope={fallbackProfileScope}
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
+        onFallbackProfileScopeChange={setFallbackProfileScope}
         onOpen={() => setIsCommandPaletteOpen(true)}
       />
     </div>

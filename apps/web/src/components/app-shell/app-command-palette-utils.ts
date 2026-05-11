@@ -1,4 +1,4 @@
-export type CommandResultGroup = 'Routes' | 'Agents' | 'Sessions' | 'Cron' | 'Skills' | 'Files';
+export type CommandResultGroup = 'Routes' | 'Profiles' | 'Sessions' | 'Cron' | 'Skills' | 'Files';
 
 export type CommandResult = {
   id: string;
@@ -11,7 +11,7 @@ export type CommandResult = {
 
 const groupPriority: Record<CommandResultGroup, number> = {
   Routes: 0,
-  Agents: 1,
+  Profiles: 1,
   Sessions: 2,
   Cron: 3,
   Skills: 4,

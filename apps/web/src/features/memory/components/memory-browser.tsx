@@ -1,13 +1,13 @@
 import type { QueryKey } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
-import { AppSelect } from '@/components/ui/app-select';
 import { EmptyState } from '@/components/ui/empty-state';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { SearchInput } from '@/components/ui/search-input';
 import { MemoryFilePanel } from '@/features/memory/components/memory-file-panel';
 import { MemoryPressureBadge } from '@/features/memory/components/memory-pressure-badge';
 import { MemorySummaryGrid } from '@/features/memory/components/memory-summary-grid';
+import { filterByProfileScope, type ProfileScopeId } from '@/features/profile-scope/profile-scope';
 import type { AgentMemoryReadResult, HermesMemoryIndex, MemoryFileSummary } from '@hermes-console/runtime';
 
 function getOverallPressureLevel(agent: AgentMemoryReadResult) {
@@ -60,90 +60,91 @@ function filterMemoryFile(file: MemoryFileSummary, query: string) {
   };
 }
 
-function createAgentOptions(memory: HermesMemoryIndex) {
-  return memory.agents.map((agent) => ({
-    value: agent.agentId,
-    label: agent.agentLabel
-  }));
-}
-
 export function MemoryBrowser({
   loadedAt,
   memory,
+  profileScope,
   refreshQueryKeys
 }: {
   loadedAt: string | null | undefined;
   memory: HermesMemoryIndex;
+  profileScope: ProfileScopeId;
   refreshQueryKeys: QueryKey[];
 }) {
-  const [agentId, setAgentId] = useState(memory.agents[0]?.agentId ?? 'default');
   const [query, setQuery] = useState('');
+  const visibleAgents = useMemo(
+    () =>
+      filterByProfileScope({
+        items: memory.agents,
+        scope: profileScope
+      }),
+    [memory.agents, profileScope]
+  );
+  const fileFiltersByAgent = useMemo(
+    () =>
+      visibleAgents.map((agent) => ({
+        agent,
+        memory: filterMemoryFile(agent.files.memory, query),
+        user: filterMemoryFile(agent.files.user, query)
+      })),
+    [query, visibleAgents]
+  );
 
-  useEffect(() => {
-    if (memory.agents.some((agent) => agent.agentId === agentId)) {
-      return;
-    }
-
-    setAgentId(memory.agents[0]?.agentId ?? 'default');
-  }, [agentId, memory.agents]);
-
-  const selectedAgent = memory.agents.find((agent) => agent.agentId === agentId) ?? memory.agents[0] ?? null;
-
-  const fileFilters = useMemo(() => {
-    if (!selectedAgent) {
-      return null;
-    }
-
-    return {
-      memory: filterMemoryFile(selectedAgent.files.memory, query),
-      user: filterMemoryFile(selectedAgent.files.user, query)
-    };
-  }, [query, selectedAgent]);
-
-  if (!selectedAgent || !fileFilters) {
+  if (visibleAgents.length === 0) {
     return (
       <EmptyState
         eyebrow="Unavailable"
-        title="No memory agents were discovered"
-        description="Hermes Console did not find any agent roots to inspect for memory files."
+        title="No memory profiles were discovered"
+        description="Hermes Console did not find any profile roots to inspect for memory files."
         tone="danger"
       />
     );
   }
 
-  const overallPressure = getOverallPressureLevel(selectedAgent);
-  const hasSearchMatches = fileFilters.memory.hasMatch || fileFilters.user.hasMatch;
-  const hasActiveFilters = query.trim().length > 0 || agentId !== (memory.agents[0]?.agentId ?? agentId);
+  const pressureRank = {
+    healthy: 0,
+    approaching_limit: 1,
+    near_limit: 2,
+    at_limit: 3
+  };
+  const overallPressure =
+    visibleAgents.map(getOverallPressureLevel).sort((left, right) => pressureRank[right] - pressureRank[left])[0] ??
+    'healthy';
+  const hasSearchMatches = fileFiltersByAgent.some((filters) => filters.memory.hasMatch || filters.user.hasMatch);
+  const visibleMemoryEntries = fileFiltersByAgent.reduce(
+    (sum, filters) => sum + filters.memory.visibleEntries.length + filters.user.visibleEntries.length,
+    0
+  );
+  const totalMemoryEntries = visibleAgents.reduce(
+    (sum, agent) => sum + agent.files.memory.entries.length + agent.files.user.entries.length,
+    0
+  );
+  const hasActiveFilters = query.trim().length > 0;
   const summaryItems = [
     {
-      label: 'status',
-      value: selectedAgent.status === 'ready' ? '✓ OK' : selectedAgent.status === 'partial' ? '~ Partial' : 'Missing',
-      detail:
-        selectedAgent.status === 'ready'
-          ? 'Both memory files found for this agent.'
-          : selectedAgent.status === 'partial'
-            ? 'One memory file found, the other is missing.'
-            : 'No memory files found for this agent.',
+      label: 'profiles',
+      value: String(visibleAgents.length),
+      detail: 'Profiles visible in the active scope.',
       tone: 'default' as const
     },
     {
-      label: 'memory',
-      value: `${selectedAgent.files.memory.usagePercentage}%`,
-      detail: `${selectedAgent.files.memory.charCount}/${selectedAgent.files.memory.limit} chars used`,
+      label: 'memory files',
+      value: String(visibleAgents.filter((agent) => agent.files.memory.exists).length),
+      detail: 'MEMORY.md files found in the active scope.',
       tone: 'default' as const
     },
     {
-      label: 'user',
-      value: `${selectedAgent.files.user.usagePercentage}%`,
-      detail: `${selectedAgent.files.user.charCount}/${selectedAgent.files.user.limit} chars used`,
+      label: 'user files',
+      value: String(visibleAgents.filter((agent) => agent.files.user.exists).length),
+      detail: 'USER.md files found in the active scope.',
       tone: 'default' as const
     },
     {
       label: 'saved blocks',
-      value: String(fileFilters.memory.visibleEntries.length + fileFilters.user.visibleEntries.length),
+      value: String(visibleMemoryEntries),
       detail: query
-        ? `${fileFilters.memory.visibleEntries.length} memory + ${fileFilters.user.visibleEntries.length} user blocks visible`
-        : `${selectedAgent.files.memory.entries.length} memory + ${selectedAgent.files.user.entries.length} user entries`,
+        ? 'Blocks matching the current search across visible profiles.'
+        : `${totalMemoryEntries} memory and user entries in scope.`,
       tone: 'default' as const
     }
   ];
@@ -160,17 +161,10 @@ export function MemoryBrowser({
           Saved Memory
         </h2>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-fg-muted">
-          Hermes stores durable memory in plain markdown files. This page now shows the default agent and any profile
-          agents side by side through a single agent picker.
+          Hermes stores durable memory in plain markdown files. The global profile scope controls which memory files are
+          visible here.
         </p>
         <div className="mt-4 flex flex-wrap items-stretch gap-3">
-          <AppSelect
-            value={agentId}
-            onChange={setAgentId}
-            options={createAgentOptions(memory)}
-            ariaLabel="Select memory agent"
-            className="min-w-[11rem] flex-[0_1_12rem]"
-          />
           <SearchInput
             value={query}
             onChange={setQuery}
@@ -181,7 +175,6 @@ export function MemoryBrowser({
             <button
               type="button"
               onClick={() => {
-                setAgentId(memory.agents[0]?.agentId ?? agentId);
                 setQuery('');
               }}
               className="rounded-xl border border-border/70 bg-bg/35 px-3 py-2.5 text-sm text-fg-muted transition-colors hover:border-accent/35 hover:text-fg"
@@ -212,20 +205,32 @@ export function MemoryBrowser({
       ) : null}
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <MemoryFilePanel
-          file={selectedAgent.files.memory}
-          limitSource={selectedAgent.limits.memory.source}
-          matchedByRawContent={fileFilters.memory.matchedByRawContent}
-          searchQuery={query}
-          visibleEntries={fileFilters.memory.visibleEntries}
-        />
-        <MemoryFilePanel
-          file={selectedAgent.files.user}
-          limitSource={selectedAgent.limits.user.source}
-          matchedByRawContent={fileFilters.user.matchedByRawContent}
-          searchQuery={query}
-          visibleEntries={fileFilters.user.visibleEntries}
-        />
+        {fileFiltersByAgent.map((filters) => (
+          <section key={filters.agent.agentId} className="space-y-4 xl:col-span-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <h3 className="font-[family-name:var(--font-bricolage)] text-base font-semibold text-fg-strong">
+                {filters.agent.agentLabel}
+              </h3>
+              <MemoryPressureBadge level={getOverallPressureLevel(filters.agent)} />
+            </div>
+            <div className="grid gap-6 xl:grid-cols-2">
+              <MemoryFilePanel
+                file={filters.agent.files.memory}
+                limitSource={filters.agent.limits.memory.source}
+                matchedByRawContent={filters.memory.matchedByRawContent}
+                searchQuery={query}
+                visibleEntries={filters.memory.visibleEntries}
+              />
+              <MemoryFilePanel
+                file={filters.agent.files.user}
+                limitSource={filters.agent.limits.user.source}
+                matchedByRawContent={filters.user.matchedByRawContent}
+                searchQuery={query}
+                visibleEntries={filters.user.visibleEntries}
+              />
+            </div>
+          </section>
+        ))}
       </div>
     </div>
   );

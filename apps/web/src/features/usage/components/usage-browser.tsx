@@ -13,9 +13,9 @@ import {
   YAxis
 } from 'recharts';
 
-import { AppSelect } from '@/components/ui/app-select';
 import { EmptyState } from '@/components/ui/empty-state';
 import { RefreshButton } from '@/components/ui/refresh-button';
+import { filterByProfileScope, isAllProfilesScope, type ProfileScopeId } from '@/features/profile-scope/profile-scope';
 import {
   summarizeUsageWindow,
   type HermesUsageSummary,
@@ -109,11 +109,13 @@ function buildBucketStarts(now: Date, windowId: UsageWindowId): number[] {
 }
 
 function getCurrentUsageWindow({
+  allowAggregateFallback,
   now,
   records,
   usage,
   windowId
 }: {
+  allowAggregateFallback: boolean;
   now: Date;
   records: HermesUsageSummary['records'];
   usage: HermesUsageSummary;
@@ -122,6 +124,14 @@ function getCurrentUsageWindow({
   if (records.length > 0) {
     return summarizeUsageWindow({
       records,
+      windowId,
+      now
+    });
+  }
+
+  if (!allowAggregateFallback) {
+    return summarizeUsageWindow({
+      records: [],
       windowId,
       now
     });
@@ -138,19 +148,6 @@ function getCurrentUsageWindow({
     windowId,
     now
   });
-}
-
-function createAgentOptions(usage: HermesUsageSummary) {
-  return [
-    {
-      value: 'all',
-      label: 'All agents'
-    },
-    ...usage.agents.map((agent) => ({
-      value: agent.id,
-      label: agent.label
-    }))
-  ];
 }
 
 function UsageSummaryGrid({ items }: { items: Array<{ label: string; value: string; detail: string }> }) {
@@ -438,28 +435,43 @@ function UsageBreakdownChart({ current }: { current: UsageWindowSummary }) {
   );
 }
 
-export function UsageBrowser({ refreshQueryKeys, usage }: { refreshQueryKeys: QueryKey[]; usage: HermesUsageSummary }) {
+export function UsageBrowser({
+  profileScope,
+  profileScopeLabel,
+  refreshQueryKeys,
+  usage
+}: {
+  profileScope: ProfileScopeId;
+  profileScopeLabel: string;
+  refreshQueryKeys: QueryKey[];
+  usage: HermesUsageSummary;
+}) {
   const [windowId, setWindowId] = useState<UsageWindowId>(
     usage.availableWindows[1] ?? usage.availableWindows[0] ?? '7d'
   );
-  const [agentId, setAgentId] = useState('all');
   const usageWindowTimestamp = useMemo(() => new Date(usage.loadedAt), [usage.loadedAt]);
+  const hasRecordLevelUsage = usage.records.length > 0;
+  const showAggregateScopeNote = !isAllProfilesScope(profileScope) && !hasRecordLevelUsage;
   const filteredRecords = useMemo(
-    () => (agentId === 'all' ? usage.records : usage.records.filter((record) => record.agentId === agentId)),
-    [agentId, usage.records]
+    () =>
+      filterByProfileScope({
+        items: usage.records,
+        scope: profileScope
+      }),
+    [profileScope, usage.records]
   );
   const current = useMemo(
     () =>
       getCurrentUsageWindow({
+        allowAggregateFallback: isAllProfilesScope(profileScope) || !hasRecordLevelUsage,
         now: usageWindowTimestamp,
         records: filteredRecords,
         usage,
         windowId
       }),
-    [filteredRecords, usage, usageWindowTimestamp, windowId]
+    [filteredRecords, hasRecordLevelUsage, profileScope, usage, usageWindowTimestamp, windowId]
   );
-  const hasActiveFilters = agentId !== 'all';
-  const selectedAgentLabel = usage.agents.find((agent) => agent.id === agentId)?.label ?? agentId;
+  const hasActiveFilters = !isAllProfilesScope(profileScope);
   const representedAgentCount =
     filteredRecords.length > 0 ? new Set(filteredRecords.map((record) => record.agentId)).size : current.byAgent.length;
   const summaryItems = [
@@ -467,9 +479,9 @@ export function UsageBrowser({ refreshQueryKeys, usage }: { refreshQueryKeys: Qu
       label: 'total tokens',
       value: formatInteger(current.totalTokens),
       detail:
-        agentId === 'all'
+        isAllProfilesScope(profileScope) || showAggregateScopeNote
           ? `${formatInteger(current.sessionCount)} sessions in the selected window.`
-          : `${formatInteger(current.sessionCount)} sessions for ${selectedAgentLabel} in this window.`
+          : `${formatInteger(current.sessionCount)} sessions for ${profileScopeLabel} in this window.`
     },
     {
       label: 'estimated cost',
@@ -486,7 +498,9 @@ export function UsageBrowser({ refreshQueryKeys, usage }: { refreshQueryKeys: Qu
     {
       label: 'agents represented',
       value: formatInteger(representedAgentCount),
-      detail: agentId === 'all' ? 'Agents with usage in the current view.' : 'A filtered view is focused on one agent.'
+      detail: isAllProfilesScope(profileScope)
+        ? 'Profiles with usage in the current view.'
+        : 'The current view is focused on one profile.'
     }
   ];
   const tokenBreakdown = [
@@ -532,23 +546,13 @@ export function UsageBrowser({ refreshQueryKeys, usage }: { refreshQueryKeys: Qu
               );
             })}
           </div>
-          <AppSelect
-            value={agentId}
-            onChange={setAgentId}
-            options={createAgentOptions(usage)}
-            ariaLabel="Filter usage by agent"
-            className="min-w-46 flex-[0_1_12rem]"
-          />
-          {hasActiveFilters ? (
-            <button
-              type="button"
-              onClick={() => setAgentId('all')}
-              className="rounded-xl border border-border/70 bg-bg/35 px-3 py-2.5 text-sm text-fg-muted transition-colors hover:border-accent/35 hover:text-fg"
-            >
-              Clear filters
-            </button>
-          ) : null}
         </div>
+        {showAggregateScopeNote ? (
+          <p className="mt-3 max-w-3xl rounded-lg border border-amber-500/20 bg-amber-500/8 px-3 py-2 text-sm leading-6 text-amber-100">
+            Usage currently came back as an aggregate-only payload, so this chart is showing all profiles while the
+            profile scope stays selected.
+          </p>
+        ) : null}
       </section>
 
       <UsageSummaryGrid items={summaryItems} />
@@ -559,19 +563,8 @@ export function UsageBrowser({ refreshQueryKeys, usage }: { refreshQueryKeys: Qu
           title="No usage landed in this window"
           description={
             hasActiveFilters
-              ? `There were no usage records for ${selectedAgentLabel} in the selected time window.`
+              ? `There were no usage records for ${profileScopeLabel} in the selected time window.`
               : 'There were no usage records in the selected time window.'
-          }
-          action={
-            hasActiveFilters ? (
-              <button
-                type="button"
-                onClick={() => setAgentId('all')}
-                className="rounded-md border border-border/80 bg-bg/40 px-3 py-1.5 text-xs text-fg-muted transition-colors hover:border-accent/40 hover:text-fg"
-              >
-                Reset filters
-              </button>
-            ) : null
           }
         />
       ) : (

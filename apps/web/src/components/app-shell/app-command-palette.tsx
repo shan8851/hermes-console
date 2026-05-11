@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useRouter } from '@tanstack/react-router';
+import { useRouter, useRouterState } from '@tanstack/react-router';
 import { Search } from 'lucide-react';
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -11,6 +11,15 @@ import {
 import { EmptyState } from '@/components/ui/empty-state';
 import { useWindowKeydown } from '@/hooks/useWindowKeydown';
 import {
+  ALL_PROFILES_SCOPE,
+  createProfileScopeOptions,
+  createProfileSearch,
+  readProfileScopeFromSearch,
+  resolveProfileScope,
+  routeSupportsProfileScope,
+  type ProfileScopeId
+} from '@/features/profile-scope/profile-scope';
+import {
   cronQueryOptions,
   filesQueryOptions,
   inventoryQueryOptions,
@@ -20,15 +29,22 @@ import {
 import { appRoutes } from '@/lib/navigation';
 
 export function AppCommandPalette({
+  fallbackProfileScope,
   isOpen,
   onClose,
+  onFallbackProfileScopeChange,
   onOpen
 }: {
+  fallbackProfileScope: ProfileScopeId;
   isOpen: boolean;
   onClose: () => void;
+  onFallbackProfileScopeChange: (scope: ProfileScopeId) => void;
   onOpen: () => void;
 }) {
   const router = useRouter();
+  const location = useRouterState({
+    select: (state) => state.location
+  });
   const inputRef = useRef<HTMLInputElement>(null);
   const activeResultRef = useRef<HTMLButtonElement>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -131,6 +147,39 @@ export function AppCommandPalette({
   }, [deferredQuery, isOpen]);
 
   const results = useMemo(() => {
+    const agents = inventoryQuery.data?.data.agents ?? [];
+    const supportsProfileScope = routeSupportsProfileScope(location.pathname);
+    const currentProfileScope = resolveProfileScope({
+      agents,
+      value: supportsProfileScope
+        ? readProfileScopeFromSearch({
+            pathname: location.pathname,
+            search: location.search as Record<string, unknown>
+          })
+        : fallbackProfileScope
+    });
+    const navigateWithProfileScope = ({ scope }: { scope: ProfileScopeId }) => {
+      const nextScope = resolveProfileScope({
+        agents,
+        value: scope
+      });
+
+      onFallbackProfileScopeChange(nextScope);
+      onClose();
+
+      if (!supportsProfileScope) {
+        return;
+      }
+
+      void router.navigate({
+        to: location.pathname,
+        search: createProfileSearch({
+          currentSearch: location.search as Record<string, unknown>,
+          scope: nextScope
+        })
+      });
+    };
+
     const routeResults: CommandResult[] = appRoutes.map((route) => ({
       id: `route:${route.href}`,
       group: 'Routes',
@@ -138,30 +187,43 @@ export function AppCommandPalette({
       subtitle: route.description,
       keywords: [route.href, route.label, route.description],
       onSelect: () => {
+        const profileSearch = routeSupportsProfileScope(route.href)
+          ? createProfileSearch({
+              scope: currentProfileScope
+            })
+          : null;
+
         onClose();
+
+        if (profileSearch == null) {
+          void router.navigate({
+            to: route.href
+          });
+          return;
+        }
+
         void router.navigate({
-          to: route.href
+          to: route.href,
+          search: profileSearch
         });
       }
     }));
 
-    const agentResults: CommandResult[] =
-      inventoryQuery.data?.data.agents.map((agent) => ({
-        id: `agent:${agent.id}`,
-        group: 'Agents',
-        title: agent.label,
-        subtitle: agent.rootPath,
-        keywords: [agent.id, agent.label, agent.rootPath, agent.source],
-        onSelect: () => {
-          onClose();
-          void router.navigate({
-            to: '/sessions',
-            search: {
-              agent: agent.id
-            }
-          });
-        }
-      })) ?? [];
+    const profileResults: CommandResult[] = createProfileScopeOptions(agents).map((option) => ({
+      id: `profile:${option.value}`,
+      group: 'Profiles',
+      title: option.value === ALL_PROFILES_SCOPE ? 'Scope to all profiles' : `Scope to ${option.label}`,
+      subtitle:
+        option.value === ALL_PROFILES_SCOPE
+          ? 'Show aggregate data where supported'
+          : (agents.find((agent) => agent.id === option.value)?.rootPath ?? option.label),
+      keywords: [
+        option.value,
+        option.label,
+        option.value === ALL_PROFILES_SCOPE ? 'all profiles scope' : 'profile scope'
+      ],
+      onSelect: () => navigateWithProfileScope({ scope: option.value })
+    }));
 
     const sessionResults: CommandResult[] =
       sessionsQuery.data?.data.sessions.slice(0, deferredQuery ? undefined : 8).map((session) => ({
@@ -182,7 +244,7 @@ export function AppCommandPalette({
           void router.navigate({
             to: '/sessions',
             search: {
-              agent: session.agentId,
+              profile: session.agentId,
               q: session.sessionId
             }
           });
@@ -240,6 +302,9 @@ export function AppCommandPalette({
           void router.navigate({
             to: '/files',
             search: {
+              ...createProfileSearch({
+                scope: currentProfileScope
+              }),
               file: file.id
             }
           });
@@ -247,15 +312,19 @@ export function AppCommandPalette({
       })) ?? [];
 
     return filterCommandResults(
-      [...routeResults, ...agentResults, ...sessionResults, ...cronResults, ...skillResults, ...fileResults],
+      [...routeResults, ...profileResults, ...sessionResults, ...cronResults, ...skillResults, ...fileResults],
       deferredQuery
     );
   }, [
     cronQuery.data,
     deferredQuery,
+    fallbackProfileScope,
     filesQuery.data,
     inventoryQuery.data,
+    location.pathname,
+    location.search,
     onClose,
+    onFallbackProfileScopeChange,
     router,
     sessionsQuery.data,
     skillsQuery.data
@@ -341,7 +410,7 @@ export function AppCommandPalette({
                   selectedResult?.onSelect();
                 }
               }}
-              placeholder="Search routes, agents, sessions, cron jobs, skills, and files"
+              placeholder="Search routes, profiles, sessions, cron jobs, skills, and files"
               className="w-full bg-transparent text-sm text-fg outline-none placeholder:text-fg-muted"
             />
             <span className="rounded-md border border-border/80 bg-bg/60 px-2 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-fg-faint">
@@ -372,7 +441,7 @@ export function AppCommandPalette({
             <EmptyState
               eyebrow="No matches"
               title="Nothing matched this search"
-              description="Try a route name, agent, session id, cron job name, skill, or file path."
+              description="Try a route name, profile, session id, cron job name, skill, or file path."
             />
           ) : null}
 

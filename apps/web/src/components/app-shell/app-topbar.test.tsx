@@ -3,6 +3,11 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AppTopbar } from '@/components/app-shell/app-topbar';
+import { ALL_PROFILES_SCOPE } from '@/features/profile-scope/profile-scope';
+
+vi.mock('@/features/profile-scope/profile-scope-selector', () => ({
+  ProfileScopeSelector: () => <div>Profile selector</div>
+}));
 
 const renderTopbar = () => {
   const queryClient = new QueryClient({
@@ -15,7 +20,12 @@ const renderTopbar = () => {
 
   render(
     <QueryClientProvider client={queryClient}>
-      <AppTopbar onOpenCommandPalette={vi.fn()} onOpenSidebar={vi.fn()} />
+      <AppTopbar
+        fallbackProfileScope={ALL_PROFILES_SCOPE}
+        onFallbackProfileScopeChange={vi.fn()}
+        onOpenCommandPalette={vi.fn()}
+        onOpenSidebar={vi.fn()}
+      />
     </QueryClientProvider>
   );
 };
