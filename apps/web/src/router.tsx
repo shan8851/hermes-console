@@ -38,6 +38,7 @@ import { SessionsPage } from '@/routes/pages/sessions-page';
 import { SkillDetailPage } from '@/routes/pages/skill-detail-page';
 import { SkillsPage } from '@/routes/pages/skills-page';
 import { UsagePage } from '@/routes/pages/usage-page';
+import { normalizeProfileScope } from '@/features/profile-scope/profile-scope';
 import { z } from 'zod';
 
 type RouterContext = {
@@ -136,19 +137,32 @@ const rootRoute = createRootRouteWithContext<RouterContext>()({
   pendingComponent: RoutePending
 });
 
+const profileSearchSchema = z.object({
+  profile: z.string().optional()
+});
+
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
+  validateSearch: (search) => profileSearchSchema.parse(search),
   loader: ({ context }) =>
     Promise.all([
       context.queryClient.ensureQueryData(overviewQueryOptions()),
-      context.queryClient.ensureQueryData(inventoryQueryOptions())
+      context.queryClient.ensureQueryData(inventoryQueryOptions()),
+      context.queryClient.ensureQueryData(sessionsQueryOptions()),
+      context.queryClient.ensureQueryData(cronQueryOptions()),
+      context.queryClient.ensureQueryData(memoryQueryOptions())
     ]),
-  component: HomePage
+  component: () => {
+    const search = indexRoute.useSearch();
+
+    return <HomePage profileScope={normalizeProfileScope(search.profile)} />;
+  }
 });
 
 const sessionsSearchSchema = z.object({
   q: z.string().optional(),
+  profile: z.string().optional(),
   agent: z.string().optional()
 });
 
@@ -156,19 +170,33 @@ const sessionsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/sessions',
   validateSearch: (search) => sessionsSearchSchema.parse(search),
-  loader: ({ context }) => context.queryClient.ensureQueryData(sessionsQueryOptions()),
+  loader: ({ context }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(sessionsQueryOptions()),
+      context.queryClient.ensureQueryData(inventoryQueryOptions())
+    ]),
   component: () => {
     const search = sessionsRoute.useSearch();
+    const profileScope = normalizeProfileScope(search.profile ?? search.agent);
 
-    return <SessionsPage initialAgentId={search.agent ?? 'all'} initialQuery={search.q ?? ''} />;
+    return <SessionsPage initialQuery={search.q ?? ''} profileScope={profileScope} />;
   }
 });
 
 const cronRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/cron',
-  loader: ({ context }) => context.queryClient.ensureQueryData(cronQueryOptions()),
-  component: CronPage
+  validateSearch: (search) => profileSearchSchema.parse(search),
+  loader: ({ context }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(cronQueryOptions()),
+      context.queryClient.ensureQueryData(inventoryQueryOptions())
+    ]),
+  component: () => {
+    const search = cronRoute.useSearch();
+
+    return <CronPage profileScope={normalizeProfileScope(search.profile)} />;
+  }
 });
 
 const cronDetailRoute = createRoute({
@@ -191,22 +219,41 @@ const cronDetailRoute = createRoute({
 const usageRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/usage',
-  loader: ({ context }) => context.queryClient.ensureQueryData(usageQueryOptions()),
-  component: UsagePage
+  validateSearch: (search) => profileSearchSchema.parse(search),
+  loader: ({ context }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(usageQueryOptions()),
+      context.queryClient.ensureQueryData(inventoryQueryOptions())
+    ]),
+  component: () => {
+    const search = usageRoute.useSearch();
+
+    return <UsagePage profileScope={normalizeProfileScope(search.profile)} />;
+  }
 });
 
 const logsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/logs',
+  validateSearch: (search) => profileSearchSchema.parse(search),
   loader: ({ context }) => context.queryClient.ensureQueryData(logsQueryOptions()),
-  component: LogsPage
+  component: () => {
+    const search = logsRoute.useSearch();
+
+    return <LogsPage profileScope={normalizeProfileScope(search.profile)} />;
+  }
 });
 
 const skillsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/skills',
+  validateSearch: (search) => profileSearchSchema.parse(search),
   loader: ({ context }) => context.queryClient.ensureQueryData(skillsQueryOptions()),
-  component: SkillsPage
+  component: () => {
+    const search = skillsRoute.useSearch();
+
+    return <SkillsPage profileScope={normalizeProfileScope(search.profile)} />;
+  }
 });
 
 const skillDetailSearchSchema = z.object({
@@ -256,12 +303,22 @@ const skillDetailRoute = createRoute({
 const memoryRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/memory',
-  loader: ({ context }) => context.queryClient.ensureQueryData(memoryQueryOptions()),
-  component: MemoryPage
+  validateSearch: (search) => profileSearchSchema.parse(search),
+  loader: ({ context }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(memoryQueryOptions()),
+      context.queryClient.ensureQueryData(inventoryQueryOptions())
+    ]),
+  component: () => {
+    const search = memoryRoute.useSearch();
+
+    return <MemoryPage profileScope={normalizeProfileScope(search.profile)} />;
+  }
 });
 
 const filesSearchSchema = z.object({
-  file: z.string().optional()
+  file: z.string().optional(),
+  profile: z.string().optional()
 });
 
 const filesRoute = createRoute({
@@ -286,15 +343,30 @@ const filesRoute = createRoute({
     const loaderData = filesRoute.useLoaderData();
     const search = filesRoute.useSearch();
 
-    return <FilesPage selectedFileError={loaderData.selectedFileError} selectedFileId={search.file ?? null} />;
+    return (
+      <FilesPage
+        profileScope={normalizeProfileScope(search.profile)}
+        selectedFileError={loaderData.selectedFileError}
+        selectedFileId={search.file ?? null}
+      />
+    );
   }
 });
 
 const configRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/config',
-  loader: ({ context }) => context.queryClient.ensureQueryData(configQueryOptions()),
-  component: ConfigPage
+  validateSearch: (search) => profileSearchSchema.parse(search),
+  loader: ({ context }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(configQueryOptions()),
+      context.queryClient.ensureQueryData(inventoryQueryOptions())
+    ]),
+  component: () => {
+    const search = configRoute.useSearch();
+
+    return <ConfigPage profileScope={normalizeProfileScope(search.profile)} />;
+  }
 });
 
 const routeTree = rootRoute.addChildren([

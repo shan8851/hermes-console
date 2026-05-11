@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createMemoryHistory } from '@tanstack/react-router';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { AppRouterProvider, createAppRouter } from '@/router';
@@ -120,6 +120,60 @@ const appMeta = {
   version: '0.3.0',
   connectedPlatforms: ['discord'],
   connectedPlatformCount: 1
+};
+
+const inventory = {
+  paths: {
+    hermesRoot: {
+      label: 'hermes_root',
+      path: '/tmp/hermes',
+      kind: 'default',
+      envKey: 'HERMES_CONSOLE_HERMES_DIR'
+    },
+    workspaceRoot: {
+      label: 'workspace_root',
+      path: '/tmp/workspace',
+      kind: 'default',
+      envKey: 'HERMES_CONSOLE_WORKSPACE_DIR'
+    }
+  },
+  hermesRootExists: true,
+  profilesRootPath: '/tmp/hermes/profiles',
+  profilesRootExists: true,
+  agents: [
+    {
+      id: 'default',
+      label: 'Default',
+      rootPath: '/tmp/hermes',
+      source: 'root',
+      presence: {
+        config: true,
+        memory: true,
+        sessions: true,
+        cron: true,
+        skills: true,
+        stateDb: true
+      },
+      isAvailable: true
+    },
+    {
+      id: 'nigel',
+      label: 'nigel',
+      rootPath: '/tmp/hermes/profiles/nigel',
+      source: 'profile',
+      presence: {
+        config: true,
+        memory: true,
+        sessions: true,
+        cron: true,
+        skills: true,
+        stateDb: true
+      },
+      isAvailable: true
+    }
+  ],
+  availableAgentCount: 2,
+  status: 'ready'
 };
 
 const legacyUsageSummary = {
@@ -324,6 +378,210 @@ const legacyUsageSummary = {
   availableWindows: ['1d', '7d', '30d'] as const
 };
 
+const createSessionSummary = ({
+  agentId,
+  agentLabel,
+  title
+}: {
+  agentId: string;
+  agentLabel: string;
+  title: string;
+}) => ({
+  id: `${agentId}:session-1`,
+  agentId,
+  agentLabel,
+  agentSource: agentId === 'default' ? ('root' as const) : ('profile' as const),
+  agentRootPath: agentId === 'default' ? '/tmp/hermes' : `/tmp/hermes/profiles/${agentId}`,
+  sessionId: `${agentId}-session-1`,
+  sessionKey: null,
+  source: 'cli',
+  sourceLabel: 'cli',
+  title,
+  displayName: null,
+  platform: null,
+  chatType: null,
+  model: 'gpt-5',
+  startedAt: isoTimestamp,
+  endedAt: isoTimestamp,
+  lastActivityAt: isoTimestamp,
+  messageCount: 4,
+  toolCallCount: 1,
+  totalTokens: 100,
+  estimatedCostUsd: 1,
+  costStatus: 'estimated',
+  memoryFlushed: false,
+  hasStateTranscript: true,
+  hasMessagingMetadata: false,
+  cronJobId: null,
+  cronJobName: null
+});
+
+const createCronJobSummary = ({
+  agentId,
+  agentLabel,
+  attentionLevel = 'healthy',
+  latestOutputState = 'missing',
+  name,
+  overdue = false
+}: {
+  agentId: string;
+  agentLabel: string;
+  attentionLevel?: 'healthy' | 'warning' | 'critical' | 'muted';
+  latestOutputState?: 'silent' | 'contentful' | 'missing';
+  name: string;
+  overdue?: boolean;
+}) => ({
+  id: `${agentId}:job-1`,
+  jobId: `${agentId}-job-1`,
+  summaryId: `${agentId}:job-1`,
+  name,
+  agentId,
+  agentLabel,
+  agentRootPath: agentId === 'default' ? '/tmp/hermes' : `/tmp/hermes/profiles/${agentId}`,
+  enabled: true,
+  state: 'scheduled',
+  scheduleDisplay: 'every hour',
+  scheduleKind: 'interval' as const,
+  scheduleExpression: '1h',
+  model: null,
+  provider: null,
+  baseUrl: null,
+  scriptPath: null,
+  noAgent: false,
+  contextFrom: [],
+  enabledToolsets: [],
+  workdir: null,
+  createdAt: isoTimestamp,
+  nextRunAt: isoTimestamp,
+  lastRunAt: isoTimestamp,
+  pausedAt: null,
+  pausedReason: null,
+  lastStatus: null,
+  lastError: null,
+  lastDeliveryError: null,
+  deliver: 'local',
+  prompt: 'Test job',
+  skills: [],
+  skill: null,
+  repeatCompleted: null,
+  repeatTimes: null,
+  originChatName: null,
+  statusTone:
+    attentionLevel === 'critical'
+      ? ('error' as const)
+      : attentionLevel === 'warning'
+        ? ('warning' as const)
+        : ('healthy' as const),
+  attentionLevel,
+  overdue,
+  failureStreak: attentionLevel === 'healthy' ? 0 : 1,
+  recentObservedRunCount: 1,
+  recentSuccessCount: attentionLevel === 'healthy' ? 1 : 0,
+  recentFailureCount: attentionLevel === 'healthy' ? 0 : 1,
+  recentSuccessRate: attentionLevel === 'healthy' ? 1 : 0,
+  observedRunCount: 1,
+  lastSuccessfulRunAt: attentionLevel === 'healthy' ? isoTimestamp : null,
+  lastFailedRunAt: attentionLevel === 'healthy' ? null : isoTimestamp,
+  latestDurationMs: 1000,
+  averageDurationMs: 1000,
+  latestOutputState,
+  recentOutputCount: latestOutputState === 'contentful' ? 1 : 0,
+  upcomingRuns: []
+});
+
+const createMemoryIndex = () => ({
+  agents: [
+    {
+      ...createMemoryReadResult(),
+      agentId: 'default',
+      agentLabel: 'Default',
+      agentSource: 'root' as const
+    },
+    {
+      ...createMemoryReadResult(),
+      agentId: 'nigel',
+      agentLabel: 'nigel',
+      agentSource: 'profile' as const,
+      files: {
+        ...createMemoryReadResult().files,
+        memory: {
+          ...createMemoryReadResult().files.memory,
+          pressureLevel: 'near_limit' as const
+        }
+      }
+    }
+  ],
+  agentCount: 2,
+  agentsWithMemory: 2
+});
+
+const overviewSummary = {
+  capturedAt: isoTimestamp,
+  verdict: {
+    status: 'solid' as const,
+    label: 'Solid',
+    summary: 'Hermes is readable.'
+  },
+  warnings: [],
+  runtimeHealth: [],
+  platforms: [],
+  access: {
+    authProviders: [],
+    apiKeys: []
+  },
+  runtimeProfile: [],
+  activity: {
+    sessionCount: 2,
+    cronAttentionJobs: 0,
+    overdueCronJobs: 0,
+    contentfulCronJobs: 0,
+    memoryPressure: 'healthy' as const
+  },
+  installStatus: 'ready' as const,
+  availableAgentCount: 2,
+  totalAgentCount: 2,
+  gatewayState: 'running' as const,
+  gatewayUpdatedAt: isoTimestamp,
+  connectedPlatforms: [],
+  configuredPlatforms: [],
+  configuredPlatformCount: 0,
+  updateBehind: 0,
+  updateStatus: 'up_to_date' as const,
+  doctorIssueCount: 0
+};
+
+const diagnosticsResponse = {
+  data: {
+    status: {
+      capturedAt: isoTimestamp,
+      apiKeys: [],
+      authProviders: [],
+      apiKeyProviders: [],
+      messagingPlatforms: [],
+      gatewayStatus: null,
+      scheduledJobs: {
+        active: 0,
+        total: 0
+      },
+      sessions: {
+        active: 0
+      }
+    },
+    doctor: {
+      capturedAt: isoTimestamp,
+      issueCount: 0,
+      issues: [],
+      toolWarnings: [],
+      authProviders: []
+    }
+  },
+  issues: [],
+  meta: {
+    capturedAt: isoTimestamp,
+    dataStatus: 'ready' as const
+  }
+};
+
 const createFetchStub = (
   responses: Record<
     string,
@@ -337,7 +595,13 @@ const createFetchStub = (
     const rawUrl = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
     const url = new URL(rawUrl, 'http://localhost');
     const path = `${url.pathname}${url.search}`;
-    const response = responses[path];
+    const response =
+      responses[path] ??
+      (path === '/api/inventory'
+        ? {
+            body: createSnapshotEnvelope(inventory)
+          }
+        : undefined);
 
     if (!response) {
       throw new Error(`Unexpected fetch for ${path}`);
@@ -545,6 +809,149 @@ describe('selected preview routes', () => {
     expect(await screen.findByRole('heading', { name: 'Nested Demo Skill' })).toBeTruthy();
     expect(await screen.findByText('Nested guide body')).toBeTruthy();
     expect(screen.queryByText('This view could not be loaded')).toBeNull();
+  });
+
+  it('maps the legacy sessions agent query to the profile scope', async () => {
+    await renderRoute({
+      initialEntry: '/sessions?agent=nigel',
+      responses: {
+        '/api/meta/app': {
+          body: appMeta
+        },
+        '/api/sessions': {
+          body: createSnapshotEnvelope({
+            sessions: [
+              createSessionSummary({
+                agentId: 'default',
+                agentLabel: 'Default',
+                title: 'Default session'
+              }),
+              createSessionSummary({
+                agentId: 'nigel',
+                agentLabel: 'nigel',
+                title: 'Nigel session'
+              })
+            ],
+            agentCount: 2,
+            agentsWithSessions: 2
+          })
+        }
+      }
+    });
+
+    expect(await screen.findByText('Session History')).toBeTruthy();
+    expect(screen.getByText('Nigel session')).toBeTruthy();
+    expect(screen.queryByText('Default session')).toBeNull();
+  });
+
+  it('falls back calmly when a sessions profile query is unknown', async () => {
+    await renderRoute({
+      initialEntry: '/sessions?profile=missing',
+      responses: {
+        '/api/meta/app': {
+          body: appMeta
+        },
+        '/api/sessions': {
+          body: createSnapshotEnvelope({
+            sessions: [
+              createSessionSummary({
+                agentId: 'default',
+                agentLabel: 'Default',
+                title: 'Default session'
+              }),
+              createSessionSummary({
+                agentId: 'nigel',
+                agentLabel: 'nigel',
+                title: 'Nigel session'
+              })
+            ],
+            agentCount: 2,
+            agentsWithSessions: 2
+          })
+        }
+      }
+    });
+
+    expect(await screen.findByText('Session History')).toBeTruthy();
+    expect(screen.getByText('Default session')).toBeTruthy();
+    expect(screen.getByText('Nigel session')).toBeTruthy();
+  });
+
+  it('scopes overview activity cards while leaving runtime cards global when a profile scope is selected', async () => {
+    await renderRoute({
+      initialEntry: '/?profile=nigel',
+      responses: {
+        '/api/meta/app': {
+          body: appMeta
+        },
+        '/api/runtime/overview': {
+          body: createSnapshotEnvelope(overviewSummary)
+        },
+        '/api/runtime/diagnostics': {
+          body: diagnosticsResponse
+        },
+        '/api/sessions': {
+          body: createSnapshotEnvelope({
+            sessions: [
+              createSessionSummary({
+                agentId: 'default',
+                agentLabel: 'Default',
+                title: 'Default session'
+              }),
+              createSessionSummary({
+                agentId: 'nigel',
+                agentLabel: 'nigel',
+                title: 'Nigel session'
+              })
+            ],
+            agentCount: 2,
+            agentsWithSessions: 2
+          })
+        },
+        '/api/cron': {
+          body: createSnapshotEnvelope({
+            jobs: [
+              createCronJobSummary({
+                agentId: 'default',
+                agentLabel: 'Default',
+                attentionLevel: 'warning',
+                latestOutputState: 'contentful',
+                name: 'Default cron',
+                overdue: true
+              }),
+              createCronJobSummary({
+                agentId: 'nigel',
+                agentLabel: 'nigel',
+                attentionLevel: 'critical',
+                latestOutputState: 'contentful',
+                name: 'Nigel cron',
+                overdue: false
+              })
+            ],
+            agentCount: 2,
+            agentsWithCron: 2
+          })
+        },
+        '/api/memory': {
+          body: createSnapshotEnvelope(createMemoryIndex())
+        }
+      }
+    });
+
+    expect(await screen.findByText('Profile: nigel')).toBeTruthy();
+    expect(screen.getByText(/Activity cards and profile-aware sections are scoped to nigel/)).toBeTruthy();
+    expect(screen.getByText(/Runtime, gateway, update, and diagnostics cards remain global/)).toBeTruthy();
+
+    const sessionsCard = screen
+      .getAllByText('sessions')
+      .map((element) => element.closest('article'))
+      .find(Boolean);
+    expect(sessionsCard).toBeTruthy();
+    expect(within(sessionsCard as HTMLElement).getByText('1')).toBeTruthy();
+
+    const memoryCard = screen.getByText('memory pressure').closest('article');
+    expect(memoryCard).toBeTruthy();
+    expect(within(memoryCard as HTMLElement).getByText('near limit')).toBeTruthy();
   });
 
   it('loads the memory page from the legacy single-agent payload shape', async () => {

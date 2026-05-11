@@ -13,30 +13,43 @@ const toneClass = (tone: 'healthy' | 'warning' | 'critical' | 'default') => {
   }
 };
 
-export function OverviewGlance({ overview }: { overview: RuntimeOverviewSummary }) {
+export function OverviewGlance({
+  isActivityScoped = false,
+  overview
+}: {
+  isActivityScoped?: boolean;
+  overview: RuntimeOverviewSummary;
+}) {
+  const activityScopeDetail = isActivityScoped ? 'Selected profile scope.' : 'All detected profiles.';
   const activityItems = [
     {
       label: 'sessions',
       value: String(overview.activity.sessionCount),
-      detail: 'Total indexed sessions across agents.',
+      detail: `${activityScopeDetail} Indexed sessions.`,
       tone: 'default' as const
     },
     {
       label: 'cron attention',
       value: String(overview.activity.cronAttentionJobs),
-      detail: 'Overdue, flaky, or failing jobs.',
+      detail: `${activityScopeDetail} Overdue, flaky, or failing jobs.`,
       tone: 'default' as const
     },
     {
       label: 'cron overdue',
       value: String(overview.activity.overdueCronJobs),
-      detail: 'Next run more than 30 min late.',
+      detail: `${activityScopeDetail} Next run more than 30 min late.`,
+      tone: 'default' as const
+    },
+    {
+      label: 'cron outputs',
+      value: String(overview.activity.contentfulCronJobs),
+      detail: `${activityScopeDetail} Jobs with saved output content.`,
       tone: 'default' as const
     },
     {
       label: 'memory pressure',
       value: overview.activity.memoryPressure.replace(/_/g, ' '),
-      detail: 'Highest usage across files.',
+      detail: `${activityScopeDetail} Highest memory file usage.`,
       tone: 'default' as const
     }
   ];

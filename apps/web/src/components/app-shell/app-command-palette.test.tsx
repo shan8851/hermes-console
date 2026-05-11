@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { AppCommandPalette } from '@/components/app-shell/app-command-palette';
+import { ALL_PROFILES_SCOPE, type ProfileScopeId } from '@/features/profile-scope/profile-scope';
 
 const { navigateMock } = vi.hoisted(() => ({
   navigateMock: vi.fn()
@@ -16,7 +17,14 @@ vi.mock('@tanstack/react-router', async () => {
     ...actual,
     useRouter: () => ({
       navigate: navigateMock
-    })
+    }),
+    useRouterState: ({ select }: { select: (state: { location: { pathname: string; search: object } }) => unknown }) =>
+      select({
+        location: {
+          pathname: '/',
+          search: {}
+        }
+      })
   };
 });
 
@@ -263,11 +271,18 @@ const createFetchStub = () =>
 
 const PaletteHarness = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [fallbackProfileScope, setFallbackProfileScope] = useState<ProfileScopeId>(ALL_PROFILES_SCOPE);
 
   return (
     <>
       <input aria-label="Outside input" />
-      <AppCommandPalette isOpen={isOpen} onClose={() => setIsOpen(false)} onOpen={() => setIsOpen(true)} />
+      <AppCommandPalette
+        fallbackProfileScope={fallbackProfileScope}
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        onFallbackProfileScopeChange={setFallbackProfileScope}
+        onOpen={() => setIsOpen(true)}
+      />
     </>
   );
 };
@@ -314,7 +329,7 @@ describe('AppCommandPalette', () => {
     });
 
     expect(
-      await screen.findByPlaceholderText('Search routes, agents, sessions, cron jobs, skills, and files')
+      await screen.findByPlaceholderText('Search routes, profiles, sessions, cron jobs, skills, and files')
     ).toBeTruthy();
     expect(await screen.findByText('Overview')).toBeTruthy();
     expect(await screen.findByText('Debug session')).toBeTruthy();
@@ -329,7 +344,7 @@ describe('AppCommandPalette', () => {
       key: '/'
     });
 
-    expect(screen.queryByPlaceholderText('Search routes, agents, sessions, cron jobs, skills, and files')).toBeNull();
+    expect(screen.queryByPlaceholderText('Search routes, profiles, sessions, cron jobs, skills, and files')).toBeNull();
   });
 
   it('keeps the active search result scrolled into view while navigating with arrow keys', async () => {
@@ -341,7 +356,7 @@ describe('AppCommandPalette', () => {
     });
 
     const paletteInput = await screen.findByPlaceholderText(
-      'Search routes, agents, sessions, cron jobs, skills, and files'
+      'Search routes, profiles, sessions, cron jobs, skills, and files'
     );
     scrollIntoViewMock.mockReset();
 
@@ -351,6 +366,36 @@ describe('AppCommandPalette', () => {
 
     await waitFor(() => {
       expect(scrollIntoViewMock).toHaveBeenCalled();
+    });
+  });
+
+  it('scopes the current route from a profile result', async () => {
+    renderPalette();
+
+    fireEvent.keyDown(window, {
+      key: 'k',
+      ctrlKey: true
+    });
+
+    const paletteInput = await screen.findByPlaceholderText(
+      'Search routes, profiles, sessions, cron jobs, skills, and files'
+    );
+    fireEvent.change(paletteInput, {
+      target: {
+        value: 'default profile'
+      }
+    });
+    fireEvent.keyDown(paletteInput, {
+      key: 'Enter'
+    });
+
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledWith({
+        search: {
+          profile: 'default'
+        },
+        to: '/'
+      });
     });
   });
 });

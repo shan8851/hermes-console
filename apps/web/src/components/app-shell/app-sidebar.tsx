@@ -2,6 +2,11 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { ExternalLink, Github, X } from 'lucide-react';
 
+import {
+  createProfileSearch,
+  readProfileScopeFromSearch,
+  routeSupportsProfileScope
+} from '@/features/profile-scope/profile-scope';
 import { appMetaQueryOptions } from '@/lib/api';
 import { appRoutes } from '@/lib/navigation';
 
@@ -17,8 +22,13 @@ export function AppSidebar({
   onNavigate?: () => void;
   onRequestClose?: () => void;
 }) {
-  const pathname = useRouterState({
-    select: (state) => state.location.pathname
+  const location = useRouterState({
+    select: (state) => state.location
+  });
+  const pathname = location.pathname;
+  const profileScope = readProfileScopeFromSearch({
+    pathname,
+    search: location.search as Record<string, unknown>
   });
   const appMetaQuery = useQuery({
     ...appMetaQueryOptions(),
@@ -55,11 +65,17 @@ export function AppSidebar({
           {appRoutes.map((route) => {
             const active = isRouteActive(pathname, route.href);
             const Icon = route.icon;
+            const search = routeSupportsProfileScope(route.href)
+              ? createProfileSearch({
+                  scope: profileScope
+                })
+              : undefined;
 
             return (
               <Link
                 key={route.href}
                 to={route.href}
+                {...(search == null ? {} : { search })}
                 onClick={() => onNavigate?.()}
                 className={[
                   'relative flex items-start gap-3 rounded-md px-3 py-2 transition-colors',

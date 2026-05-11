@@ -9,6 +9,7 @@ import { CronCalendar } from '@/features/cron/components/cron-calendar';
 import { CronIndex } from '@/features/cron/components/cron-index';
 import { CronSummaryGrid } from '@/features/cron/components/cron-summary-grid';
 import { getCronJobDisplayState } from '@/features/cron/lib/cron-job-presentation';
+import { filterByProfileScope, type ProfileScopeId } from '@/features/profile-scope/profile-scope';
 import type { HermesCronJobSummary } from '@hermes-console/runtime';
 
 function uniqueValues(values: string[]) {
@@ -23,24 +24,10 @@ function formatCount(value: number) {
   return new Intl.NumberFormat().format(value);
 }
 
-function filterJobs({
-  jobs,
-  query,
-  agent,
-  status
-}: {
-  jobs: HermesCronJobSummary[];
-  query: string;
-  agent: string;
-  status: string;
-}) {
+function filterJobs({ jobs, query, status }: { jobs: HermesCronJobSummary[]; query: string; status: string }) {
   const normalizedQuery = query.trim().toLowerCase();
 
   return jobs.filter((job) => {
-    if (agent !== 'all' && job.agentId !== agent) {
-      return false;
-    }
-
     if (status !== 'all' && getCronJobDisplayState(job) !== status) {
       return false;
     }
@@ -70,26 +57,34 @@ function filterJobs({
 export function CronBrowser({
   jobs,
   loadedAt,
+  profileScope,
   refreshQueryKeys
 }: {
   jobs: HermesCronJobSummary[];
   loadedAt: string;
+  profileScope: ProfileScopeId;
   refreshQueryKeys: QueryKey[];
 }) {
   const [query, setQuery] = useState('');
-  const [agent, setAgent] = useState('all');
   const [status, setStatus] = useState('all');
   const [view, setView] = useState<'list' | 'calendar'>('list');
   const deferredQuery = useDeferredValue(query);
-
-  const filteredJobs = useMemo(
-    () => filterJobs({ jobs, query: deferredQuery, agent, status }),
-    [jobs, deferredQuery, agent, status]
+  const scopedJobs = useMemo(
+    () =>
+      filterByProfileScope({
+        items: jobs,
+        scope: profileScope
+      }),
+    [jobs, profileScope]
   );
 
-  const agentOptions = createOptions(uniqueValues(jobs.map((job) => job.agentId)), 'All agents');
-  const statusOptions = createOptions(uniqueValues(jobs.map((job) => getCronJobDisplayState(job))), 'All states');
-  const hasActiveFilters = query.trim().length > 0 || agent !== 'all' || status !== 'all';
+  const filteredJobs = useMemo(
+    () => filterJobs({ jobs: scopedJobs, query: deferredQuery, status }),
+    [scopedJobs, deferredQuery, status]
+  );
+
+  const statusOptions = createOptions(uniqueValues(scopedJobs.map((job) => getCronJobDisplayState(job))), 'All states');
+  const hasActiveFilters = query.trim().length > 0 || status !== 'all';
   const pausedJobCount = filteredJobs.filter(
     (job) => getCronJobDisplayState(job) === 'paused' || getCronJobDisplayState(job) === 'disabled'
   ).length;
@@ -100,9 +95,9 @@ export function CronBrowser({
       label: 'active jobs',
       value: formatCount(activeJobCount),
       detail:
-        filteredJobs.length === jobs.length
+        filteredJobs.length === scopedJobs.length
           ? 'Jobs that are currently schedulable.'
-          : `Filtered from ${formatCount(jobs.length)} total jobs.`,
+          : `Filtered from ${formatCount(scopedJobs.length)} scoped jobs.`,
       tone: 'default' as const
     },
     {
@@ -146,13 +141,6 @@ export function CronBrowser({
             className="min-w-[18rem] flex-[2.2_1_28rem]"
           />
           <AppSelect
-            value={agent}
-            onChange={setAgent}
-            options={agentOptions}
-            ariaLabel="Filter cron jobs by agent"
-            className="min-w-[11.5rem] flex-[0_1_12rem]"
-          />
-          <AppSelect
             value={status}
             onChange={setStatus}
             options={statusOptions}
@@ -182,7 +170,6 @@ export function CronBrowser({
               type="button"
               onClick={() => {
                 setQuery('');
-                setAgent('all');
                 setStatus('all');
               }}
               className="rounded-xl border border-border/70 bg-bg/35 px-3 py-2.5 text-sm text-fg-muted transition-colors hover:border-accent/35 hover:text-fg"
@@ -198,14 +185,13 @@ export function CronBrowser({
         <EmptyState
           eyebrow="No matches"
           title="No cron jobs matched these filters"
-          description="Try a different search, agent, or job state."
+          description="Try a different profile scope, search, or job state."
           action={
             hasActiveFilters ? (
               <button
                 type="button"
                 onClick={() => {
                   setQuery('');
-                  setAgent('all');
                   setStatus('all');
                 }}
                 className="rounded-md border border-border/80 bg-bg/40 px-3 py-1.5 text-xs text-fg-muted transition-colors hover:border-accent/40 hover:text-fg"

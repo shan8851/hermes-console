@@ -1,26 +1,44 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import hljs from 'highlight.js/lib/core';
 import yaml from 'highlight.js/lib/languages/yaml';
 
 import { QueryStatusCard } from '@/components/ui/query-status-card';
-import { configQueryOptions } from '@/lib/api';
+import { filterByProfileScope, resolveProfileScope } from '@/features/profile-scope/profile-scope';
+import { configQueryOptions, inventoryQueryOptions } from '@/lib/api';
 
 import type { HermesConfigFile, HermesQueryIssue, HermesQueryStatus } from '@hermes-console/runtime';
+import type { ProfileScopeId } from '@/features/profile-scope/profile-scope';
 
 hljs.registerLanguage('yaml', yaml);
 
-export function ConfigPage() {
+export function ConfigPage({ profileScope }: { profileScope: ProfileScopeId }) {
   const query = useSuspenseQuery(configQueryOptions());
+  const inventory = useSuspenseQuery(inventoryQueryOptions());
   const [selectedIdx, setSelectedIdx] = useState(0);
-  const files = query.data.data.files;
+  const resolvedProfileScope = resolveProfileScope({
+    agents: inventory.data.data.agents,
+    value: profileScope
+  });
+  const files = filterByProfileScope({
+    items: query.data.data.files,
+    scope: resolvedProfileScope
+  });
   const firstFile = files[0];
+
+  useEffect(() => {
+    if (selectedIdx < files.length) {
+      return;
+    }
+
+    setSelectedIdx(0);
+  }, [files.length, selectedIdx]);
 
   if (!firstFile) {
     return (
       <div className="space-y-6">
         <QueryStatusCard title="Config read quality" status={query.data.meta.dataStatus} issues={query.data.issues} />
-        <p className="text-sm text-fg-muted">No config files found.</p>
+        <p className="text-sm text-fg-muted">No config files found for the active profile scope.</p>
       </div>
     );
   }

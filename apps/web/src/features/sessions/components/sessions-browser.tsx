@@ -5,6 +5,7 @@ import { AppSelect } from '@/components/ui/app-select';
 import { EmptyState } from '@/components/ui/empty-state';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { SearchInput } from '@/components/ui/search-input';
+import { filterByProfileScope, type ProfileScopeId } from '@/features/profile-scope/profile-scope';
 import { SessionsIndex } from '@/features/sessions/components/sessions-index';
 import { SessionsSummaryGrid } from '@/features/sessions/components/sessions-summary-grid';
 import type { HermesSessionSummary } from '@hermes-console/runtime';
@@ -12,23 +13,17 @@ import type { HermesSessionSummary } from '@hermes-console/runtime';
 function filterSessions({
   sessions,
   query,
-  agent,
   source,
   platform
 }: {
   sessions: HermesSessionSummary[];
   query: string;
-  agent: string;
   source: string;
   platform: string;
 }) {
   const normalizedQuery = query.trim().toLowerCase();
 
   return sessions.filter((session) => {
-    if (agent !== 'all' && session.agentId !== agent) {
-      return false;
-    }
-
     if (source !== 'all' && (session.source ?? 'unknown') !== source) {
       return false;
     }
@@ -70,57 +65,61 @@ function formatCount(value: number) {
 }
 
 export function SessionsBrowser({
-  initialAgentId,
   initialQuery,
   loadedAt,
+  profileScope,
   refreshQueryKeys,
   sessions
 }: {
-  initialAgentId: string;
   initialQuery: string;
   loadedAt: string;
+  profileScope: ProfileScopeId;
   refreshQueryKeys: QueryKey[];
   sessions: HermesSessionSummary[];
 }) {
   const [query, setQuery] = useState(initialQuery);
-  const [agent, setAgent] = useState(initialAgentId);
   const [source, setSource] = useState('all');
   const [platform, setPlatform] = useState('all');
   const deferredQuery = useDeferredValue(query);
 
   useEffect(() => {
     setQuery(initialQuery);
-    setAgent(initialAgentId);
-  }, [initialAgentId, initialQuery]);
+  }, [initialQuery]);
+
+  const scopedSessions = useMemo(
+    () =>
+      filterByProfileScope({
+        items: sessions,
+        scope: profileScope
+      }),
+    [profileScope, sessions]
+  );
 
   const filteredSessions = useMemo(
     () =>
       filterSessions({
-        sessions,
+        sessions: scopedSessions,
         query: deferredQuery,
-        agent,
         source,
         platform
       }),
-    [sessions, deferredQuery, agent, source, platform]
+    [scopedSessions, deferredQuery, source, platform]
   );
 
-  const agents = uniqueValues(sessions.map((session) => session.agentId));
-  const sources = uniqueValues(sessions.map((session) => session.source ?? 'unknown'));
-  const platforms = uniqueValues(sessions.map((session) => session.platform ?? 'unknown'));
-  const agentOptions = createOptions(agents, 'All agents');
+  const sources = uniqueValues(scopedSessions.map((session) => session.source ?? 'unknown'));
+  const platforms = uniqueValues(scopedSessions.map((session) => session.platform ?? 'unknown'));
   const sourceOptions = createOptions(sources, 'All sources');
   const platformOptions = createOptions(platforms, 'All platforms');
-  const hasActiveFilters = query.trim().length > 0 || agent !== 'all' || source !== 'all' || platform !== 'all';
+  const hasActiveFilters = query.trim().length > 0 || source !== 'all' || platform !== 'all';
 
   const summaryItems = [
     {
       label: 'visible sessions',
       value: formatCount(filteredSessions.length),
       detail:
-        filteredSessions.length === sessions.length
-          ? 'All aggregated sessions across detected agents.'
-          : `Filtered from ${formatCount(sessions.length)} total sessions.`,
+        filteredSessions.length === scopedSessions.length
+          ? 'All sessions in the active profile scope.'
+          : `Filtered from ${formatCount(scopedSessions.length)} scoped sessions.`,
       tone: 'default' as const
     },
     {
@@ -174,13 +173,6 @@ export function SessionsBrowser({
             className="min-w-[18rem] flex-[2.4_1_28rem]"
           />
           <AppSelect
-            value={agent}
-            onChange={setAgent}
-            options={agentOptions}
-            ariaLabel="Filter sessions by agent"
-            className="min-w-[11.5rem] flex-[0_1_12rem]"
-          />
-          <AppSelect
             value={source}
             onChange={setSource}
             options={sourceOptions}
@@ -199,7 +191,6 @@ export function SessionsBrowser({
               type="button"
               onClick={() => {
                 setQuery('');
-                setAgent('all');
                 setSource('all');
                 setPlatform('all');
               }}
@@ -216,14 +207,13 @@ export function SessionsBrowser({
         <EmptyState
           eyebrow="No matches"
           title="No sessions matched these filters"
-          description="Try a different agent, source, platform, or session search."
+          description="Try a different profile scope, source, platform, or session search."
           action={
             hasActiveFilters ? (
               <button
                 type="button"
                 onClick={() => {
                   setQuery('');
-                  setAgent('all');
                   setSource('all');
                   setPlatform('all');
                 }}

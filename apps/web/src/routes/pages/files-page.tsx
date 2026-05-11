@@ -5,12 +5,15 @@ import { RefreshButton } from '@/components/ui/refresh-button';
 import { KeyFilePreview } from '@/features/key-files/components/key-file-preview';
 import { KeyFilesIndex } from '@/features/key-files/components/key-files-index';
 import { KeyFilesSummaryGrid } from '@/features/key-files/components/key-files-summary-grid';
+import { isAllProfilesScope, type ProfileScopeId } from '@/features/profile-scope/profile-scope';
 import { apiQueryKeys, fileContentQueryOptions, filesQueryOptions } from '@/lib/api';
 
 export const FilesPage = ({
+  profileScope,
   selectedFileError,
   selectedFileId
 }: {
+  profileScope: ProfileScopeId;
   selectedFileError: string | null;
   selectedFileId: string | null;
 }) => {
@@ -53,6 +56,12 @@ export const FilesPage = ({
   return (
     <div className="space-y-8">
       <QueryStatusCard title="File discovery quality" status={query.data.meta.dataStatus} issues={query.data.issues} />
+      {!isAllProfilesScope(profileScope) ? (
+        <p className="rounded-lg border border-border/70 bg-surface/60 px-4 py-3 text-sm leading-6 text-fg-muted">
+          Files are currently discovered from the Hermes root and configured workspace root, so profile scope does not
+          filter this view yet.
+        </p>
+      ) : null}
       <section className="max-w-3xl">
         <div className="flex flex-wrap items-center gap-3">
           <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">Files</p>
