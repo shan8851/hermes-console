@@ -381,10 +381,12 @@ const legacyUsageSummary = {
 const createSessionSummary = ({
   agentId,
   agentLabel,
+  endedAt = isoTimestamp,
   title
 }: {
   agentId: string;
   agentLabel: string;
+  endedAt?: string | null;
   title: string;
 }) => ({
   id: `${agentId}:session-1`,
@@ -402,7 +404,7 @@ const createSessionSummary = ({
   chatType: null,
   model: 'gpt-5',
   startedAt: isoTimestamp,
-  endedAt: isoTimestamp,
+  endedAt,
   lastActivityAt: isoTimestamp,
   messageCount: 4,
   toolCallCount: 1,
@@ -523,6 +525,7 @@ const overviewSummary = {
     summary: 'Hermes is readable.'
   },
   warnings: [],
+  attentionItems: [],
   runtimeHealth: [],
   platforms: [],
   access: {
@@ -564,7 +567,7 @@ const diagnosticsResponse = {
         total: 0
       },
       sessions: {
-        active: 0
+        active: 8
       }
     },
     doctor: {
@@ -829,6 +832,7 @@ describe('selected preview routes', () => {
               createSessionSummary({
                 agentId: 'nigel',
                 agentLabel: 'nigel',
+                endedAt: null,
                 title: 'Nigel session'
               })
             ],
@@ -885,7 +889,35 @@ describe('selected preview routes', () => {
           body: appMeta
         },
         '/api/runtime/overview': {
-          body: createSnapshotEnvelope(overviewSummary)
+          body: createSnapshotEnvelope({
+            ...overviewSummary,
+            attentionItems: [
+              {
+                id: 'cron:default-job',
+                severity: 'warning' as const,
+                domain: 'cron' as const,
+                title: 'Default profile cron needs attention',
+                summary: 'Default profile: overdue.',
+                href: '/cron/default/default-job',
+                profileId: 'default',
+                profileLabel: 'Default',
+                isActionable: true,
+                isOptionalSurface: false
+              },
+              {
+                id: 'cron:nigel-job',
+                severity: 'warning' as const,
+                domain: 'cron' as const,
+                title: 'Nigel cron needs attention',
+                summary: 'nigel: failed last run.',
+                href: '/cron/nigel/nigel-job',
+                profileId: 'nigel',
+                profileLabel: 'nigel',
+                isActionable: true,
+                isOptionalSurface: false
+              }
+            ]
+          })
         },
         '/api/runtime/diagnostics': {
           body: diagnosticsResponse
@@ -901,6 +933,7 @@ describe('selected preview routes', () => {
               createSessionSummary({
                 agentId: 'nigel',
                 agentLabel: 'nigel',
+                endedAt: null,
                 title: 'Nigel session'
               })
             ],
@@ -940,7 +973,8 @@ describe('selected preview routes', () => {
 
     expect(await screen.findByText('Profile: nigel')).toBeTruthy();
     expect(screen.getByText(/Activity cards and profile-aware sections are scoped to nigel/)).toBeTruthy();
-    expect(screen.getByText(/Runtime, gateway, update, and diagnostics cards remain global/)).toBeTruthy();
+    expect(screen.getByText(/Runtime, gateway, and update cards remain global/)).toBeTruthy();
+    expect(screen.getByText(/Diagnostics labels scoped counts separately from global CLI state/)).toBeTruthy();
 
     const sessionsCard = screen
       .getAllByText('sessions')
@@ -952,6 +986,22 @@ describe('selected preview routes', () => {
     const memoryCard = screen.getByText('memory pressure').closest('article');
     expect(memoryCard).toBeTruthy();
     expect(within(memoryCard as HTMLElement).getByText('near limit')).toBeTruthy();
+
+    expect(screen.getByText('Nigel cron needs attention')).toBeTruthy();
+    expect(screen.queryByText('Default profile cron needs attention')).toBeNull();
+    expect(screen.getByText('Memory pressure is near limit')).toBeTruthy();
+
+    const diagnosticsActiveSessionsCard = (await screen.findByText('active sessions')).closest('article');
+    expect(diagnosticsActiveSessionsCard).toBeTruthy();
+    expect(within(diagnosticsActiveSessionsCard as HTMLElement).getByText('1')).toBeTruthy();
+    expect(within(diagnosticsActiveSessionsCard as HTMLElement).queryByText('8')).toBeNull();
+    expect(
+      within(diagnosticsActiveSessionsCard as HTMLElement).getByText(/nigel scoped active session count/)
+    ).toBeTruthy();
+
+    const diagnosticsScheduledJobsCard = screen.getByText('scheduled jobs').closest('article');
+    expect(diagnosticsScheduledJobsCard).toBeTruthy();
+    expect(within(diagnosticsScheduledJobsCard as HTMLElement).getByText('1 / 1')).toBeTruthy();
   });
 
   it('loads the memory page from the legacy single-agent payload shape', async () => {

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import type { AttentionItem } from '../attention/types.js';
+import { attentionItemSchema } from '../attention/types.js';
 import type { InventoryInstallationStatus } from '../inventory/discovery.js';
 import { inventoryInstallationStatusSchema } from '../inventory/discovery.js';
 import type { MemoryPressureLevel } from '../memory/types.js';
@@ -123,6 +125,7 @@ export type RuntimeOverviewSummary = {
   capturedAt: string | null;
   verdict: OverviewVerdict;
   warnings: OverviewWarning[];
+  attentionItems: AttentionItem[];
   runtimeHealth: RuntimeHealthItem[];
   platforms: PlatformSurfaceSummary[];
   access: {
@@ -293,6 +296,7 @@ export const runtimeOverviewSummarySchema = z.object({
   capturedAt: z.string().nullable(),
   verdict: overviewVerdictSchema,
   warnings: z.array(overviewWarningSchema),
+  attentionItems: z.array(attentionItemSchema),
   runtimeHealth: z.array(runtimeHealthItemSchema),
   platforms: z.array(platformSurfaceSummarySchema),
   access: z.object({

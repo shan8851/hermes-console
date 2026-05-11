@@ -13,6 +13,7 @@ const overview: RuntimeOverviewSummary = {
     summary: 'The runtime is behind upstream.'
   },
   warnings: [],
+  attentionItems: [],
   runtimeHealth: [],
   platforms: [],
   access: {

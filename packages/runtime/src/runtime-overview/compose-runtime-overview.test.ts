@@ -158,6 +158,25 @@ describe('composeRuntimeOverview', () => {
         detail: '1 overdue · 1 on a failure streak'
       })
     ]);
+    expect(overview.attentionItems).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'runtime:update-behind',
+          severity: 'warning',
+          domain: 'runtime'
+        }),
+        expect.objectContaining({
+          id: 'memory:pressure',
+          severity: 'warning',
+          domain: 'memory'
+        }),
+        expect.objectContaining({
+          id: expect.stringMatching(/^cron:/),
+          severity: 'warning',
+          domain: 'cron'
+        })
+      ])
+    );
     expect(overview.platforms).toEqual([
       expect.objectContaining({
         name: 'Discord',
@@ -372,6 +391,13 @@ describe('composeRuntimeOverview', () => {
       expect.objectContaining({
         id: 'gateway-state',
         tone: 'critical'
+      })
+    ]);
+    expect(overview.attentionItems).toEqual([
+      expect.objectContaining({
+        id: 'gateway:state',
+        severity: 'critical',
+        domain: 'gateway'
       })
     ]);
     expect(overview.platforms).toEqual([]);
