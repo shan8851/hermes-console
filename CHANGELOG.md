@@ -4,6 +4,8 @@
 
 - Added a global profile scope selector that carries `?profile=` across profile-aware routes and keeps legacy session `?agent=` links working.
 - Scoped sessions, cron, usage, logs, memory, files, config, skills, and Overview activity to selected Hermes profiles where the backing data supports it.
+- Added a calmer Overview attention centre that prioritizes actionable cron, runtime, memory, config, skills, and log signals without promoting optional missing files as primary warnings.
+- Moved raw low-level read diagnostics into an expandable Diagnostics section so debugging evidence remains available without dominating the dashboard.
 - Clarified Overview behaviour so activity cards and agent lists can be profile-scoped while runtime, gateway, update, platform, and diagnostics state remain global.
 - Flattened the topbar search/profile controls for a cleaner shell without redundant profile labels.
 - Added route/component coverage for profile scoping, unknown-profile fallback, scoped Overview activity, and config empty states.

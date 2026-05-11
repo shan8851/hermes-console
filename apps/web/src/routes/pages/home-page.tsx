@@ -1,6 +1,5 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
 
-import { QueryStatusCard } from '@/components/ui/query-status-card';
 import {
   filterByProfileScope,
   getProfileScopeLabel,
@@ -25,7 +24,12 @@ import { OverviewHero } from '@/features/runtime-overview/components/overview-he
 import { OverviewRuntimeInstall } from '@/features/runtime-overview/components/overview-runtime-install';
 import { OverviewSurfaces } from '@/features/runtime-overview/components/overview-surfaces';
 
-import type { AgentMemoryReadResult, MemoryPressureLevel, RuntimeOverviewSummary } from '@hermes-console/runtime';
+import {
+  sortAttentionItems,
+  type AgentMemoryReadResult,
+  type MemoryPressureLevel,
+  type RuntimeOverviewSummary
+} from '@hermes-console/runtime';
 
 const MEMORY_PRESSURE_RANK: Record<MemoryPressureLevel, number> = {
   healthy: 0,
@@ -42,6 +46,53 @@ const getAgentMemoryPressure = (agent: AgentMemoryReadResult): MemoryPressureLev
 
 const getScopedMemoryPressure = (agents: AgentMemoryReadResult[]): MemoryPressureLevel =>
   agents.map(getAgentMemoryPressure).reduce(maxMemoryPressure, 'healthy');
+
+const createScopedMemoryAttentionItem = (
+  memoryPressure: MemoryPressureLevel
+): RuntimeOverviewSummary['attentionItems'][number] | null => {
+  if (memoryPressure !== 'near_limit' && memoryPressure !== 'at_limit') {
+    return null;
+  }
+
+  return {
+    id: 'memory:pressure:scoped',
+    severity: memoryPressure === 'at_limit' ? 'critical' : 'warning',
+    domain: 'memory',
+    title: `Memory pressure is ${memoryPressure.replace(/_/g, ' ')}`,
+    summary: 'At least one memory file in the selected profile is close to its configured limit.',
+    href: '/memory',
+    isActionable: true,
+    isOptionalSurface: false
+  };
+};
+
+const isProfileScopedAttentionDomain = (domain: RuntimeOverviewSummary['attentionItems'][number]['domain']) =>
+  domain === 'config' || domain === 'cron' || domain === 'files' || domain === 'memory' || domain === 'sessions';
+
+const buildScopedAttentionItems = ({
+  attentionItems,
+  memoryPressure,
+  profileScope
+}: {
+  attentionItems: RuntimeOverviewSummary['attentionItems'];
+  memoryPressure: MemoryPressureLevel;
+  profileScope: ProfileScopeId;
+}): RuntimeOverviewSummary['attentionItems'] => {
+  if (isAllProfilesScope(profileScope)) {
+    return attentionItems;
+  }
+
+  const scopedItems = attentionItems.filter((item) => {
+    if (item.profileId) {
+      return item.profileId === profileScope;
+    }
+
+    return !isProfileScopedAttentionDomain(item.domain);
+  });
+  const memoryAttention = createScopedMemoryAttentionItem(memoryPressure);
+
+  return sortAttentionItems(memoryAttention ? [...scopedItems, memoryAttention] : scopedItems);
+};
 
 const buildScopedActivity = ({
   cronJobs,
@@ -106,6 +157,14 @@ export const HomePage = ({ profileScope }: { profileScope: ProfileScopeId }) => 
     agents: inventory.data.data.agents,
     scope: resolvedProfileScope
   });
+  const scopedSessions = filterByProfileScope({
+    items: sessions.data.data.sessions,
+    scope: resolvedProfileScope
+  });
+  const scopedCronJobs = filterByProfileScope({
+    items: cron.data.data.jobs,
+    scope: resolvedProfileScope
+  });
   const scopedActivity = buildScopedActivity({
     cronJobs: cron.data.data.jobs,
     memoryAgents: memory.data.data.agents,
@@ -115,16 +174,16 @@ export const HomePage = ({ profileScope }: { profileScope: ProfileScopeId }) => 
   });
   const visibleOverview = {
     ...overview.data.data,
-    activity: scopedActivity
+    activity: scopedActivity,
+    attentionItems: buildScopedAttentionItems({
+      attentionItems: overview.data.data.attentionItems,
+      memoryPressure: scopedActivity.memoryPressure,
+      profileScope: resolvedProfileScope
+    })
   };
 
   return (
     <div className="space-y-10">
-      <QueryStatusCard
-        title="Overview data quality"
-        status={overview.data.meta.dataStatus}
-        issues={overview.data.issues}
-      />
       {!isAllProfilesScope(resolvedProfileScope) ? (
         <section className="rounded-lg border border-accent/25 bg-accent/8 px-4 py-3">
           <div className="flex flex-wrap items-center gap-3">
@@ -132,8 +191,8 @@ export const HomePage = ({ profileScope }: { profileScope: ProfileScopeId }) => 
               Profile: {profileScopeLabel}
             </span>
             <p className="text-sm leading-6 text-fg-muted">
-              Activity cards and profile-aware sections are scoped to {profileScopeLabel}. Runtime, gateway, update, and
-              diagnostics cards remain global.
+              Activity cards and profile-aware sections are scoped to {profileScopeLabel}. Runtime, gateway, and update
+              cards remain global; Diagnostics labels scoped counts separately from global CLI state.
             </p>
           </div>
         </section>
@@ -151,8 +210,16 @@ export const HomePage = ({ profileScope }: { profileScope: ProfileScopeId }) => 
       />
       <OverviewGlance isActivityScoped={!isAllProfilesScope(resolvedProfileScope)} overview={visibleOverview} />
       <OverviewRuntimeInstall overview={overview.data.data} />
-      <OverviewDiagnostics />
-      <OverviewAttention overview={overview.data.data} />
+      <OverviewAttention overview={visibleOverview} profileScope={resolvedProfileScope} />
+      <OverviewDiagnostics
+        overviewIssues={overview.data.issues}
+        scope={{
+          isScoped: !isAllProfilesScope(resolvedProfileScope),
+          label: profileScopeLabel,
+          cronJobs: scopedCronJobs,
+          sessions: scopedSessions
+        }}
+      />
       <OverviewSurfaces overview={overview.data.data} />
       <OverviewConfiguration overview={overview.data.data} />
       <AgentList agents={visibleAgents} />

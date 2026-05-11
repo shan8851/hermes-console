@@ -48,5 +48,8 @@ describe('readRuntimeOverviewQuery', () => {
       summary: 'channel_directory.json not found',
       path: path.join(hermesRoot, 'channel_directory.json')
     });
+    expect(result.data.attentionItems.some((item) => item.id === 'issue:runtime-channel-directory-missing')).toBe(
+      false
+    );
   });
 });

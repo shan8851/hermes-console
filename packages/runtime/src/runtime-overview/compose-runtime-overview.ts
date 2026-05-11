@@ -1,5 +1,9 @@
+import { composeAttentionItems } from '../attention/compose-attention.js';
+import type { HermesQueryIssue } from '../hermes-query.js';
 import type { InventoryInstallationStatus } from '../inventory/discovery.js';
+import type { HermesLogFileSummary } from '../logs/types.js';
 import type { MemoryPressureLevel } from '../memory/types.js';
+import type { SkillSummary } from '../skills/types.js';
 import type {
   AccessCheckSummary,
   ChannelDirectorySummary,
@@ -414,6 +418,10 @@ export function composeRuntimeOverview({
   memory,
   sessions,
   cron,
+  logs,
+  configFiles,
+  skills,
+  queryIssues,
   status,
   doctor,
   envEntries
@@ -436,6 +444,14 @@ export function composeRuntimeOverview({
   sessions: { sessions: Array<unknown> };
   cron: {
     jobs: Array<{
+      summaryId?: string;
+      jobId?: string;
+      name?: string;
+      agentId?: string;
+      agentLabel?: string;
+      lastStatus?: string | null;
+      lastError?: string | null;
+      lastDeliveryError?: string | null;
       statusTone: string;
       latestOutputState: string;
       attentionLevel: string;
@@ -443,6 +459,16 @@ export function composeRuntimeOverview({
       failureStreak: number;
     }>;
   };
+  logs?: HermesLogFileSummary[];
+  configFiles?: Array<{
+    agentId: string;
+    agentLabel: string;
+    path: string;
+    readStatus?: 'ready' | 'missing' | 'unreadable';
+    readDetail?: string | null;
+  }>;
+  skills?: SkillSummary[];
+  queryIssues?: HermesQueryIssue[];
   status?: StatusSnapshotSummary;
   doctor?: DoctorSnapshotSummary;
   envEntries?: Map<string, string>;
@@ -483,6 +509,35 @@ export function composeRuntimeOverview({
     memoryPressure,
     cron
   });
+  const attentionItems = composeAttentionItems({
+    cronJobs: cron.jobs.map((job) => ({
+      summaryId: job.summaryId ?? `${job.agentId ?? 'unknown'}:${job.jobId ?? job.name ?? 'job'}`,
+      jobId: job.jobId ?? job.name ?? 'job',
+      name: job.name ?? job.jobId ?? 'Cron job',
+      agentId: job.agentId ?? 'unknown',
+      agentLabel: job.agentLabel ?? 'Unknown profile',
+      attentionLevel:
+        job.attentionLevel === 'healthy' ||
+        job.attentionLevel === 'warning' ||
+        job.attentionLevel === 'critical' ||
+        job.attentionLevel === 'muted'
+          ? job.attentionLevel
+          : 'healthy',
+      lastStatus: job.lastStatus ?? null,
+      lastError: job.lastError ?? null,
+      lastDeliveryError: job.lastDeliveryError ?? null,
+      overdue: job.overdue,
+      failureStreak: job.failureStreak
+    })),
+    doctor: safeDoctor,
+    gateway,
+    memoryPressure,
+    update,
+    ...(configFiles == null ? {} : { configFiles }),
+    ...(logs == null ? {} : { logs }),
+    ...(queryIssues == null ? {} : { queryIssues }),
+    ...(skills == null ? {} : { skills })
+  });
   const verdict = buildVerdict({
     gateway,
     installation,
@@ -494,6 +549,7 @@ export function composeRuntimeOverview({
     capturedAt: safeDoctor.capturedAt ?? safeStatus.capturedAt ?? gateway.updatedAt ?? null,
     verdict,
     warnings,
+    attentionItems,
     runtimeHealth: buildRuntimeHealthItems({
       installation,
       gateway,

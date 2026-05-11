@@ -1,12 +1,15 @@
 import path from 'node:path';
 
 import { readHermesCronResult } from '@/features/cron/read-hermes-cron';
+import { readHermesConfig } from '@/features/config/read-config';
 import { readHermesInstallationResult } from '@/features/inventory/read-installation';
 import { resolveInventoryPathConfigFromEnv } from '@/features/inventory/resolve-path-config';
+import { readHermesLogsResult } from '@/features/logs/read-logs';
 import { createMissingPathIssue, createUnreadablePathIssue } from '@/lib/query-issue-factories';
 import { readTextFileResult } from '@/lib/read-text-file-result';
 import { readHermesMemoryResult } from '@/features/memory/read-memory';
 import { readHermesSessionsResult } from '@/features/sessions/read-hermes-sessions';
+import { readHermesSkillsResult } from '@/features/skills/read-skills';
 import { createHermesQueryResult } from '@hermes-console/runtime';
 import type { HermesQueryIssue, HermesQueryResult } from '@hermes-console/runtime';
 import { composeRuntimeOverview } from '@hermes-console/runtime';
@@ -69,6 +72,9 @@ export function readRuntimeOverviewQuery(): HermesQueryResult<RuntimeOverviewSum
   const memory = readHermesMemoryResult();
   const sessions = readHermesSessionsResult();
   const cron = readHermesCronResult();
+  const logs = readHermesLogsResult();
+  const configFiles = readHermesConfig();
+  const skills = readHermesSkillsResult();
 
   const gatewayPath = path.join(hermesRoot, 'gateway_state.json');
   const channelDirectoryPath = path.join(hermesRoot, 'channel_directory.json');
@@ -88,7 +94,14 @@ export function readRuntimeOverviewQuery(): HermesQueryResult<RuntimeOverviewSum
   const config = parseConfigPosture(configContent.content ?? '');
   const envEntries = parseEnvAssignments(envContent.content ?? '');
 
-  const issues: HermesQueryIssue[] = [...installation.issues, ...memory.issues, ...sessions.issues, ...cron.issues];
+  const issues: HermesQueryIssue[] = [
+    ...installation.issues,
+    ...memory.issues,
+    ...sessions.issues,
+    ...cron.issues,
+    ...logs.issues,
+    ...skills.issues
+  ];
 
   if (!installation.data.hermesRootExists) {
     issues.push({
@@ -207,6 +220,10 @@ export function readRuntimeOverviewQuery(): HermesQueryResult<RuntimeOverviewSum
     memory: memory.data,
     sessions: sessions.data,
     cron: cron.data,
+    logs: logs.data.logs,
+    configFiles: configFiles.files,
+    skills: skills.data.skills,
+    queryIssues: issues,
     envEntries
   });
 
