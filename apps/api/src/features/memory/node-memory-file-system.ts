@@ -10,6 +10,17 @@ export const nodeMemoryFileSystem: MemoryFileSystem = {
       return false;
     }
   },
+  getLastModifiedMs(targetPath) {
+    try {
+      if (!fs.existsSync(targetPath)) {
+        return null;
+      }
+
+      return fs.statSync(targetPath).mtimeMs;
+    } catch {
+      return null;
+    }
+  },
   readTextFile(targetPath) {
     try {
       if (!fs.existsSync(targetPath)) {

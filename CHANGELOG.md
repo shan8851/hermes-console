@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added skill readiness and provenance signals, linked skill-file browsing, and profile/source/category/readiness filtering on the Skills page.
+- Added memory provider/status/pressure summaries with profile-scoped built-in memory inspection and search.
 - Added operational command palette shortcuts for cron health filters, log/session/memory/diagnostics navigation, and route-specific filter clearing.
 
 ## 0.6.0 - 2026-05-12

@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { QueryStatusCard } from '@/components/ui/query-status-card';
 import { LinkedFileKindBadge } from '@/features/skills/components/linked-file-kind-badge';
 import { SkillParseBadge } from '@/features/skills/components/skill-parse-badge';
+import { SkillReadinessBadge } from '@/features/skills/components/skill-readiness-badge';
 import { Link } from '@tanstack/react-router';
 
 function createViewerLink({ skillId, file }: { skillId: string; file: string }) {
@@ -68,6 +69,7 @@ export function SkillFileViewer({
         <AppBreadcrumbs items={[{ label: 'Skills', to: '/skills' }, { label: detail.summary.name }]} />
         <div className="flex flex-wrap items-center gap-3">
           <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-accent">Skills</p>
+          <SkillReadinessBadge status={detail.summary.readiness.status} />
           <SkillParseBadge status={detail.summary.parseStatus} />
         </div>
         <h2 className="mt-3 font-[family-name:var(--font-bricolage)] text-xl font-semibold tracking-tight text-fg-strong sm:text-2xl">
@@ -83,6 +85,9 @@ export function SkillFileViewer({
             category {detail.summary.category}
           </span>
           <span className="rounded-full border border-border/80 bg-bg/40 px-3 py-1 font-mono">
+            source {detail.summary.source.kind}
+          </span>
+          <span className="rounded-full border border-border/80 bg-bg/40 px-3 py-1 font-mono">
             {detail.summary.linkedFiles.length} linked files
           </span>
           <Link
@@ -91,6 +96,45 @@ export function SkillFileViewer({
           >
             back to skills
           </Link>
+        </div>
+      </section>
+
+      <section className="grid gap-3 lg:grid-cols-3">
+        <div className="rounded-lg border border-border bg-surface/70 p-4">
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-faint">readiness</p>
+          <p className="mt-2 text-sm text-fg-strong">{detail.summary.readiness.status.replaceAll('_', ' ')}</p>
+          <p className="mt-2 text-sm leading-6 text-fg-muted">
+            {detail.summary.readiness.reasons[0] ?? 'No setup or platform blocker was detected from local metadata.'}
+          </p>
+        </div>
+        <div className="rounded-lg border border-border bg-surface/70 p-4">
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-faint">platform</p>
+          <p className="mt-2 text-sm text-fg-strong">{detail.summary.readiness.platform.status.replaceAll('_', ' ')}</p>
+          <p className="mt-2 text-sm leading-6 text-fg-muted">
+            {detail.summary.readiness.platform.platforms.length > 0
+              ? detail.summary.readiness.platform.platforms.join(', ')
+              : 'all platforms'}
+          </p>
+        </div>
+        <div className="rounded-lg border border-border bg-surface/70 p-4">
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-faint">setup</p>
+          <p className="mt-2 text-sm text-fg-strong">
+            {detail.summary.readiness.requirements.length} declared reference
+            {detail.summary.readiness.requirements.length === 1 ? '' : 's'}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {detail.summary.readiness.requirements.slice(0, 6).map((requirement) => (
+              <span
+                key={`${requirement.kind}:${requirement.name}`}
+                className="rounded-full border border-border/80 bg-bg/40 px-2.5 py-1 font-mono text-[11px] text-fg-muted"
+              >
+                {requirement.kind} {requirement.name}: {requirement.status}
+              </span>
+            ))}
+            {detail.summary.readiness.requirements.length === 0 ? (
+              <span className="text-sm leading-6 text-fg-muted">No setup metadata declared.</span>
+            ) : null}
+          </div>
         </div>
       </section>
 

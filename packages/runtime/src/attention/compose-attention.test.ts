@@ -86,8 +86,33 @@ describe('composeAttentionItems', () => {
           name: 'Bad Skill',
           description: 'No frontmatter',
           category: 'workspace',
+          tags: [],
+          profileId: 'default',
+          source: {
+            agentId: 'default',
+            kind: 'root',
+            label: 'Default',
+            rootPath: '/tmp/hermes/skills'
+          },
           skillPath: 'bad-skill/SKILL.md',
           parseStatus: 'malformed',
+          readiness: {
+            status: 'parse_issue',
+            reasons: ['SKILL.md frontmatter is missing required name or description metadata.'],
+            platform: {
+              currentPlatform: 'linux',
+              platforms: [],
+              status: 'compatible'
+            },
+            requirements: [],
+            linkedFileCount: 0,
+            linkedFilesByKind: {
+              asset: 0,
+              reference: 0,
+              script: 0,
+              template: 0
+            }
+          },
           linkedFiles: []
         }
       ]

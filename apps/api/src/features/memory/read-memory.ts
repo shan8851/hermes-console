@@ -33,6 +33,7 @@ function createEmptyMemoryReadResult(hermesRoot: string): MemoryReadResult {
         label: 'MEMORY',
         filePath: `${hermesRoot}/memories/MEMORY.md`,
         exists: false,
+        lastModifiedMs: null,
         rawContent: '',
         preamble: '',
         entries: [],
@@ -47,6 +48,7 @@ function createEmptyMemoryReadResult(hermesRoot: string): MemoryReadResult {
         label: 'USER',
         filePath: `${hermesRoot}/memories/USER.md`,
         exists: false,
+        lastModifiedMs: null,
         rawContent: '',
         preamble: '',
         entries: [],
@@ -56,6 +58,21 @@ function createEmptyMemoryReadResult(hermesRoot: string): MemoryReadResult {
         usagePercentage: 0,
         pressureLevel: 'healthy'
       }
+    },
+    provider: {
+      kind: 'built_in_only',
+      name: 'Built-in markdown',
+      status: 'built_in_only',
+      description: 'Hermes built-in MEMORY.md and USER.md files are always available when present.',
+      configuredProvider: null,
+      requirements: []
+    },
+    statusSummary: {
+      level: 'missing',
+      label: 'Missing',
+      detail: 'Neither MEMORY.md nor USER.md exists under this agent root.',
+      latestModifiedMs: null,
+      staleAfterDays: 90
     }
   };
 }

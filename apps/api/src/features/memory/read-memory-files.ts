@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { parse } from 'yaml';
 
 import {
   DEFAULT_MEMORY_CHAR_LIMIT,
@@ -6,24 +7,108 @@ import {
   type MemoryEntry,
   type MemoryFileSummary,
   type MemoryLimitSummary,
+  type MemoryProviderStatus,
+  type MemoryProviderSummary,
   type MemoryPressureLevel,
   type MemoryReadResult,
+  type MemoryStatusSummary,
   type MemoryScope
 } from '@hermes-console/runtime';
 
 export type MemoryFileSystem = {
   pathExists(targetPath: string): boolean;
+  getLastModifiedMs(targetPath: string): number | null;
   readTextFile(targetPath: string): string | null;
 };
 
 const MEMORY_SECTION_NAME = 'memory';
+const MEMORY_STALE_AFTER_DAYS = 90;
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 const MEMORY_FILE_NAMES: Record<MemoryScope, string> = {
   memory: 'MEMORY.md',
   user: 'USER.md'
 };
+const KNOWN_MEMORY_PROVIDERS: Record<
+  string,
+  {
+    description: string;
+    requiredEnvVars: string[];
+    optionalEnvVars: string[];
+  }
+> = {
+  byterover: {
+    description: 'ByteRover persistent knowledge tree via the brv CLI.',
+    requiredEnvVars: [],
+    optionalEnvVars: ['BRV_API_KEY']
+  },
+  hindsight: {
+    description: 'Hindsight long-term memory with knowledge graph retrieval.',
+    requiredEnvVars: [],
+    optionalEnvVars: ['HINDSIGHT_API_KEY', 'HINDSIGHT_LLM_API_KEY']
+  },
+  holographic: {
+    description: 'Local SQLite fact store with FTS5 search.',
+    requiredEnvVars: [],
+    optionalEnvVars: []
+  },
+  honcho: {
+    description: 'Honcho AI-native cross-session user modeling.',
+    requiredEnvVars: ['HONCHO_API_KEY'],
+    optionalEnvVars: []
+  },
+  mem0: {
+    description: 'Mem0 server-side fact extraction with semantic search.',
+    requiredEnvVars: ['MEM0_API_KEY'],
+    optionalEnvVars: []
+  },
+  openviking: {
+    description: 'OpenViking context database with tiered retrieval.',
+    requiredEnvVars: ['OPENVIKING_ENDPOINT'],
+    optionalEnvVars: ['OPENVIKING_API_KEY', 'OPENVIKING_ACCOUNT', 'OPENVIKING_USER', 'OPENVIKING_AGENT']
+  },
+  retaindb: {
+    description: 'RetainDB cloud memory API with hybrid search.',
+    requiredEnvVars: ['RETAINDB_API_KEY'],
+    optionalEnvVars: []
+  },
+  supermemory: {
+    description: 'Supermemory semantic long-term memory.',
+    requiredEnvVars: ['SUPERMEMORY_API_KEY'],
+    optionalEnvVars: []
+  }
+};
 
 function normalizeText(value: string) {
   return value.replace(/\r\n/g, '\n');
+}
+
+function parseYamlRecord(rawContent: string): Record<string, unknown> {
+  try {
+    const parsed = parse(rawContent) as unknown;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function readMemoryConfig(configText: string) {
+  const parsed = parseYamlRecord(configText);
+  const memoryConfig = parsed.memory;
+
+  return memoryConfig && typeof memoryConfig === 'object' && !Array.isArray(memoryConfig)
+    ? (memoryConfig as Record<string, unknown>)
+    : {};
+}
+
+function parseEnvKeys(rawContent: string) {
+  return new Set(
+    normalizeText(rawContent)
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith('#'))
+      .map((line) => line.match(/^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)=/)?.[1] ?? '')
+      .filter(Boolean)
+  );
 }
 
 function parseConfiguredLimit({
@@ -157,6 +242,7 @@ function buildMemoryFileSummary({
   const filePath = path.join(hermesRoot, 'memories', MEMORY_FILE_NAMES[scope]);
   const rawContent = fileSystem.readTextFile(filePath) ?? '';
   const exists = fileSystem.pathExists(filePath);
+  const lastModifiedMs = exists ? fileSystem.getLastModifiedMs(filePath) : null;
   const { preamble, entries } = parseMemoryContent({ scope, rawContent });
   const charCount = normalizeText(rawContent).trim().length;
   const usageRatio = limit > 0 ? charCount / limit : 0;
@@ -166,6 +252,7 @@ function buildMemoryFileSummary({
     label: scope === 'memory' ? 'MEMORY' : 'USER',
     filePath,
     exists,
+    lastModifiedMs,
     rawContent,
     preamble,
     entries,
@@ -189,6 +276,133 @@ function deriveReadStatus(memoryExists: boolean, userExists: boolean): MemoryRea
   return 'missing';
 }
 
+function getLatestModifiedMs(files: MemoryReadResult['files']) {
+  return (
+    [files.memory.lastModifiedMs, files.user.lastModifiedMs]
+      .filter((value): value is number => typeof value === 'number')
+      .sort((left, right) => right - left)[0] ?? null
+  );
+}
+
+function hasMemoryPressure(files: MemoryReadResult['files']) {
+  return files.memory.pressureLevel !== 'healthy' || files.user.pressureLevel !== 'healthy';
+}
+
+function deriveStatusSummary({
+  files,
+  readStatus
+}: {
+  files: MemoryReadResult['files'];
+  readStatus: MemoryReadResult['status'];
+}): MemoryStatusSummary {
+  const latestModifiedMs = getLatestModifiedMs(files);
+  const staleCutoffMs = Date.now() - MEMORY_STALE_AFTER_DAYS * MILLISECONDS_PER_DAY;
+
+  if (readStatus === 'missing') {
+    return {
+      level: 'missing',
+      label: 'Missing',
+      detail: 'Neither MEMORY.md nor USER.md exists under this agent root.',
+      latestModifiedMs,
+      staleAfterDays: MEMORY_STALE_AFTER_DAYS
+    };
+  }
+
+  if (hasMemoryPressure(files)) {
+    return {
+      level: 'pressured',
+      label: 'Pressured',
+      detail: 'At least one built-in memory file is above its healthy usage band.',
+      latestModifiedMs,
+      staleAfterDays: MEMORY_STALE_AFTER_DAYS
+    };
+  }
+
+  if (latestModifiedMs != null && latestModifiedMs < staleCutoffMs) {
+    return {
+      level: 'stale',
+      label: 'Stale',
+      detail: `No built-in memory file has changed in the last ${MEMORY_STALE_AFTER_DAYS} days.`,
+      latestModifiedMs,
+      staleAfterDays: MEMORY_STALE_AFTER_DAYS
+    };
+  }
+
+  return {
+    level: 'healthy',
+    label: 'Healthy',
+    detail: 'Built-in memory files are present and within their configured character limits.',
+    latestModifiedMs,
+    staleAfterDays: MEMORY_STALE_AFTER_DAYS
+  };
+}
+
+function normalizeConfiguredProvider(memoryConfig: Record<string, unknown>) {
+  const provider = typeof memoryConfig.provider === 'string' ? memoryConfig.provider.trim() : '';
+  return provider && provider !== 'builtin' ? provider : null;
+}
+
+function resolveProviderStatus({
+  configuredProvider,
+  missingRequiredEnvVars
+}: {
+  configuredProvider: string | null;
+  missingRequiredEnvVars: string[];
+}): MemoryProviderStatus {
+  if (!configuredProvider) {
+    return 'built_in_only';
+  }
+
+  if (!KNOWN_MEMORY_PROVIDERS[configuredProvider]) {
+    return 'provider_missing';
+  }
+
+  return missingRequiredEnvVars.length > 0 ? 'setup_needed' : 'configured';
+}
+
+function deriveProviderSummary({
+  configText,
+  envText
+}: {
+  configText: string;
+  envText: string;
+}): MemoryProviderSummary {
+  const memoryConfig = readMemoryConfig(configText);
+  const configuredProvider = normalizeConfiguredProvider(memoryConfig);
+  const providerMetadata = configuredProvider ? KNOWN_MEMORY_PROVIDERS[configuredProvider] : null;
+  const envKeys = new Set([...Array.from(parseEnvKeys(envText)), ...Object.keys(process.env)]);
+  const requiredEnvVars = providerMetadata?.requiredEnvVars ?? [];
+  const optionalEnvVars = providerMetadata?.optionalEnvVars ?? [];
+  const missingRequiredEnvVars = requiredEnvVars.filter((envVar) => !envKeys.has(envVar));
+
+  if (!configuredProvider) {
+    return {
+      kind: 'built_in_only',
+      name: 'Built-in markdown',
+      status: 'built_in_only',
+      description: 'Hermes built-in MEMORY.md and USER.md files are always available when present.',
+      configuredProvider: null,
+      requirements: []
+    };
+  }
+
+  return {
+    kind: 'external',
+    name: configuredProvider,
+    status: resolveProviderStatus({
+      configuredProvider,
+      missingRequiredEnvVars
+    }),
+    description: providerMetadata?.description ?? null,
+    configuredProvider,
+    requirements: [...requiredEnvVars, ...optionalEnvVars].map((envVar) => ({
+      envVar,
+      required: requiredEnvVars.includes(envVar),
+      status: envKeys.has(envVar) ? ('present' as const) : ('missing' as const)
+    }))
+  };
+}
+
 export function readMemoryFiles({
   hermesRoot,
   fileSystem
@@ -197,7 +411,9 @@ export function readMemoryFiles({
   fileSystem: MemoryFileSystem;
 }): MemoryReadResult {
   const configPath = path.join(hermesRoot, 'config.yaml');
+  const envPath = path.join(hermesRoot, '.env');
   const configText = fileSystem.readTextFile(configPath) ?? '';
+  const envText = fileSystem.readTextFile(envPath) ?? '';
 
   const limits = {
     memory: resolveLimitSummary({
@@ -230,11 +446,20 @@ export function readMemoryFiles({
       limit: limits.user.value
     })
   };
+  const status = deriveReadStatus(files.memory.exists, files.user.exists);
 
   return {
-    status: deriveReadStatus(files.memory.exists, files.user.exists),
+    status,
     rootPath: hermesRoot,
     configPath,
+    provider: deriveProviderSummary({
+      configText,
+      envText
+    }),
+    statusSummary: deriveStatusSummary({
+      files,
+      readStatus: status
+    }),
     limits,
     files
   };
