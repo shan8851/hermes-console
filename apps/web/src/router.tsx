@@ -40,6 +40,7 @@ import { SessionsPage } from '@/routes/pages/sessions-page';
 import { SkillDetailPage } from '@/routes/pages/skill-detail-page';
 import { SkillsPage } from '@/routes/pages/skills-page';
 import { UsagePage } from '@/routes/pages/usage-page';
+import { normalizeCronFilterSearch } from '@/features/cron/lib/cron-filters';
 import { normalizeProfileScope } from '@/features/profile-scope/profile-scope';
 import { z } from 'zod';
 
@@ -205,7 +206,7 @@ const sessionDetailRoute = createRoute({
 const cronRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/cron',
-  validateSearch: (search) => profileSearchSchema.parse(search),
+  validateSearch: (search) => normalizeCronFilterSearch(search as Record<string, unknown>),
   loader: ({ context }) =>
     Promise.all([
       context.queryClient.ensureQueryData(cronQueryOptions()),
@@ -214,7 +215,7 @@ const cronRoute = createRoute({
   component: () => {
     const search = cronRoute.useSearch();
 
-    return <CronPage profileScope={normalizeProfileScope(search.profile)} />;
+    return <CronPage cronSearch={search} profileScope={normalizeProfileScope(search.profile)} />;
   }
 });
 
@@ -222,12 +223,15 @@ const cronDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/cron/$agentId/$jobId',
   loader: ({ context, params }) =>
-    context.queryClient.ensureQueryData(
-      cronDetailQueryOptions({
-        agentId: params.agentId,
-        jobId: params.jobId
-      })
-    ),
+    Promise.all([
+      context.queryClient.ensureQueryData(
+        cronDetailQueryOptions({
+          agentId: params.agentId,
+          jobId: params.jobId
+        })
+      ),
+      context.queryClient.ensureQueryData(cronQueryOptions())
+    ]),
   component: () => {
     const params = cronDetailRoute.useParams();
 

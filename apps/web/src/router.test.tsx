@@ -959,6 +959,34 @@ describe('selected preview routes', () => {
     expect(screen.getByText('Nigel session')).toBeTruthy();
   });
 
+  it('drops invalid cron search params instead of rendering a route error', async () => {
+    await renderRoute({
+      initialEntry: '/cron?health=broken&sort=random&enabled=yes&script=false&mode=agent&context=none&workdir=nope',
+      responses: {
+        '/api/meta/app': {
+          body: appMeta
+        },
+        '/api/cron': {
+          body: createSnapshotEnvelope({
+            jobs: [
+              createCronJobSummary({
+                agentId: 'default',
+                agentLabel: 'Default',
+                name: 'Review cron'
+              })
+            ],
+            agentCount: 1,
+            agentsWithCron: 1
+          })
+        }
+      }
+    });
+
+    expect(await screen.findByRole('heading', { name: 'Scheduled Jobs' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Clear filters' })).toBeNull();
+    expect(screen.queryByText('This view could not be loaded')).toBeNull();
+  });
+
   it('scopes overview activity cards while leaving runtime cards global when a profile scope is selected', async () => {
     await renderRoute({
       initialEntry: '/?profile=nigel',
