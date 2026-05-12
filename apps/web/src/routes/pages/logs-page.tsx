@@ -17,6 +17,7 @@ export const LogsPage = ({ profileScope }: { profileScope: ProfileScopeId }) => 
         </p>
       ) : null}
       <LogsBrowser
+        eventSummary={query.data.data.eventSummary}
         logs={query.data.data.logs}
         loadedAt={query.data.meta.capturedAt ?? new Date().toISOString()}
         refreshQueryKeys={[apiQueryKeys.logs]}

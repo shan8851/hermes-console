@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import { useEffect, useMemo, useState } from 'react';
 
 import { AppSelect } from '@/components/ui/app-select';
@@ -6,7 +7,13 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { SearchInput } from '@/components/ui/search-input';
 import { apiQueryKeys, logDetailQueryOptions } from '@/lib/api';
-import type { HermesLogDetail, HermesLogFileSummary } from '@hermes-console/runtime';
+import type {
+  HermesLogDetail,
+  HermesLogEvent,
+  HermesLogEventGroup,
+  HermesLogEventSummary,
+  HermesLogFileSummary
+} from '@hermes-console/runtime';
 
 const levelOptions = [
   { value: 'all', label: 'All levels' },
@@ -60,7 +67,39 @@ function lineTone(level: string) {
   return 'text-fg';
 }
 
-function createSummaryItems(logs: HermesLogFileSummary[], selectedDetail: HermesLogDetail | null) {
+function eventTone(level: HermesLogEvent['level']) {
+  if (level === 'error') {
+    return 'border-rose-500/35 bg-rose-500/10 text-rose-200';
+  }
+
+  return 'border-amber-500/35 bg-amber-500/10 text-amber-200';
+}
+
+function formatEventTimestamp(value: string | null) {
+  if (!value) {
+    return 'unknown time';
+  }
+
+  return new Date(value).toLocaleString();
+}
+
+function formatGroupTimestamp(value: string | null) {
+  if (!value) {
+    return 'no timestamp';
+  }
+
+  return new Date(value).toLocaleTimeString();
+}
+
+function createSummaryItems({
+  eventSummary,
+  logs,
+  selectedDetail
+}: {
+  eventSummary: HermesLogEventSummary;
+  logs: HermesLogFileSummary[];
+  selectedDetail: HermesLogDetail | null;
+}) {
   return [
     {
       label: 'log files',
@@ -68,14 +107,14 @@ function createSummaryItems(logs: HermesLogFileSummary[], selectedDetail: Hermes
       detail: 'Detected Hermes runtime logs.'
     },
     {
-      label: 'tail errors',
-      value: formatNumber(logs.reduce((sum, log) => sum + log.errorLineCount, 0)),
-      detail: 'Errors counted from the analyzed tail window.'
+      label: 'recent errors',
+      value: formatNumber(eventSummary.recentErrorCount),
+      detail: 'Error events from the analyzed tail windows.'
     },
     {
-      label: 'tail warnings',
-      value: formatNumber(logs.reduce((sum, log) => sum + log.warningLineCount, 0)),
-      detail: 'Warnings counted from the analyzed tail window.'
+      label: 'recent warnings',
+      value: formatNumber(eventSummary.recentWarningCount),
+      detail: 'Warning events from the analyzed tail windows.'
     },
     {
       label: 'selected lines',
@@ -94,6 +133,142 @@ function LogSummaryCard({ item }: { item: { label: string; value: string; detail
       </p>
       <p className="mt-2 text-sm leading-6 text-fg-muted">{item.detail}</p>
     </article>
+  );
+}
+
+function EventGroupList({ groups, title }: { groups: HermesLogEventGroup[]; title: string }) {
+  if (groups.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="rounded-lg border border-border bg-surface/70 p-4">
+      <h3 className="font-[family-name:var(--font-bricolage)] text-base font-semibold text-fg-strong">{title}</h3>
+      <div className="mt-4 space-y-2">
+        {groups.slice(0, 6).map((group) => (
+          <div
+            key={group.id}
+            className="flex items-center justify-between gap-3 rounded-md border border-border/70 bg-bg/35 px-3 py-2.5"
+          >
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-fg-strong">{group.label}</p>
+              <p className="mt-1 text-xs text-fg-faint">latest {formatGroupTimestamp(group.latestTimestamp)}</p>
+            </div>
+            <div className="shrink-0 text-right font-mono text-[11px] uppercase tracking-[0.12em] text-fg-muted">
+              <p>{group.errorCount} err</p>
+              <p className="mt-1">{group.warningCount} warn</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function LogEventTimeline({
+  eventSummary,
+  expandedEventIds,
+  onToggleEvent
+}: {
+  eventSummary: HermesLogEventSummary;
+  expandedEventIds: Set<string>;
+  onToggleEvent: (eventId: string) => void;
+}) {
+  if (eventSummary.topEvents.length === 0) {
+    return (
+      <section className="rounded-lg border border-border bg-surface/70 p-4">
+        <EmptyState
+          eyebrow="Events"
+          title="No warning or error events found"
+          description="The analyzed log tails did not contain warning or error events."
+        />
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-lg border border-border bg-surface/70 p-4">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-accent">Event timeline</p>
+          <h3 className="mt-2 font-[family-name:var(--font-bricolage)] text-base font-semibold text-fg-strong">
+            Recent warnings and errors
+          </h3>
+        </div>
+        <p className="text-xs text-fg-muted">{formatNumber(eventSummary.analyzedLineCount)} analyzed lines</p>
+      </div>
+
+      <div className="space-y-3">
+        {eventSummary.topEvents.map((event) => {
+          const isExpanded = expandedEventIds.has(event.id);
+          const contextParts = [
+            event.component ?? 'unknown component',
+            event.logger,
+            event.logName,
+            `line ${event.lineNumber}`
+          ].filter(Boolean);
+
+          return (
+            <article key={event.id} className="rounded-md border border-border/70 bg-bg/35 p-3">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={[
+                        'rounded-full border px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.14em]',
+                        eventTone(event.level)
+                      ].join(' ')}
+                    >
+                      {event.rawLevel ?? event.level}
+                    </span>
+                    <span className="text-xs text-fg-muted">{formatEventTimestamp(event.timestamp)}</span>
+                    {event.sessionLink ? (
+                      <Link
+                        params={{
+                          agentId: event.sessionLink.agentId,
+                          sessionId: event.sessionLink.sessionId
+                        }}
+                        to="/sessions/$agentId/$sessionId"
+                        className="text-xs text-accent transition-colors hover:text-fg-strong"
+                      >
+                        session {event.sessionLink.sessionId}
+                      </Link>
+                    ) : event.sessionId ? (
+                      <span className="font-mono text-[11px] text-fg-faint">session {event.sessionId}</span>
+                    ) : null}
+                  </div>
+                  <p className="mt-3 break-words text-sm leading-6 text-fg-strong">
+                    {event.message}
+                    {event.messageOmittedCharCount > 0 ? (
+                      <span className="text-fg-faint">
+                        {' '}
+                        [{formatNumber(event.messageOmittedCharCount)} chars omitted]
+                      </span>
+                    ) : null}
+                  </p>
+                  <p className="mt-2 break-all font-mono text-[11px] text-fg-faint">{contextParts.join(' · ')}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onToggleEvent(event.id)}
+                  className="rounded-md border border-border/80 bg-bg/40 px-2.5 py-1 text-xs text-fg-muted transition-colors hover:border-accent/35 hover:text-fg"
+                >
+                  {isExpanded ? 'Hide raw' : 'Show raw'}
+                </button>
+              </div>
+              {isExpanded ? (
+                <pre className="mt-3 max-h-52 overflow-auto whitespace-pre-wrap break-words rounded-md border border-border/70 bg-black/25 p-3 font-mono text-[11px] leading-5 text-fg-muted">
+                  {event.rawLine}
+                  {event.rawLineOmittedCharCount > 0
+                    ? `\n[raw line truncated: ${formatNumber(event.rawLineOmittedCharCount)} chars omitted]`
+                    : ''}
+                </pre>
+              ) : null}
+            </article>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -204,10 +379,12 @@ function LogLines({ detail, level, query }: { detail: HermesLogDetail; level: st
 }
 
 export function LogsBrowser({
+  eventSummary,
   loadedAt,
   logs,
   refreshQueryKeys
 }: {
+  eventSummary: HermesLogEventSummary;
   loadedAt: string;
   logs: HermesLogFileSummary[];
   refreshQueryKeys: QueryKey[];
@@ -218,6 +395,7 @@ export function LogsBrowser({
   const [level, setLevel] = useState('all');
   const [query, setQuery] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [expandedEventIds, setExpandedEventIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (selectedLogId && logs.some((log) => log.id === selectedLogId)) {
@@ -262,11 +440,28 @@ export function LogsBrowser({
   }, [autoRefresh, lineCount, queryClient, selectedLogId]);
 
   const selectedDetail = selectedLogQuery.data?.data ?? null;
-  const summaryItems = createSummaryItems(logs, selectedDetail);
+  const summaryItems = createSummaryItems({
+    eventSummary,
+    logs,
+    selectedDetail
+  });
   const effectiveRefreshKeys =
     selectedLogId == null
       ? refreshQueryKeys
       : [...refreshQueryKeys, apiQueryKeys.logDetail(selectedLogId, Number(lineCount))];
+  const handleToggleEvent = (eventId: string) => {
+    setExpandedEventIds((current) => {
+      const nextEventIds = new Set(current);
+
+      if (nextEventIds.has(eventId)) {
+        nextEventIds.delete(eventId);
+        return nextEventIds;
+      }
+
+      nextEventIds.add(eventId);
+      return nextEventIds;
+    });
+  };
 
   if (logs.length === 0) {
     return (
@@ -314,6 +509,18 @@ export function LogsBrowser({
           <LogSummaryCard key={item.label} item={item} />
         ))}
       </section>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
+        <LogEventTimeline
+          eventSummary={eventSummary}
+          expandedEventIds={expandedEventIds}
+          onToggleEvent={handleToggleEvent}
+        />
+        <div className="space-y-6">
+          <EventGroupList groups={eventSummary.componentGroups} title="Components" />
+          <EventGroupList groups={eventSummary.fileGroups} title="Files" />
+        </div>
+      </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(18rem,0.58fr)_minmax(0,1.42fr)]">
         <LogList logs={logs} selectedLogId={selectedLogId} onSelect={setSelectedLogId} />
