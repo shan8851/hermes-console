@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added operational command palette shortcuts for cron health filters, log/session/memory/diagnostics navigation, and route-specific filter clearing.
+
 ## 0.6.0 - 2026-05-12
 
 - Added read-only session detail pages with transcript timelines, token/cost breakdowns, lineage metadata, and direct links from session search/list results.

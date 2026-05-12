@@ -6,7 +6,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AppCommandPalette } from '@/components/app-shell/app-command-palette';
 import { ALL_PROFILES_SCOPE, type ProfileScopeId } from '@/features/profile-scope/profile-scope';
 
-const { navigateMock } = vi.hoisted(() => ({
+const { locationMock, navigateMock } = vi.hoisted(() => ({
+  locationMock: {
+    pathname: '/',
+    search: {} as Record<string, unknown>
+  },
   navigateMock: vi.fn()
 }));
 
@@ -18,12 +22,13 @@ vi.mock('@tanstack/react-router', async () => {
     useRouter: () => ({
       navigate: navigateMock
     }),
-    useRouterState: ({ select }: { select: (state: { location: { pathname: string; search: object } }) => unknown }) =>
+    useRouterState: ({
+      select
+    }: {
+      select: (state: { location: { pathname: string; search: Record<string, unknown> } }) => unknown;
+    }) =>
       select({
-        location: {
-          pathname: '/',
-          search: {}
-        }
+        location: locationMock
       })
   };
 });
@@ -287,7 +292,15 @@ const PaletteHarness = () => {
   );
 };
 
-const renderPalette = () => {
+const renderPalette = ({
+  pathname = '/',
+  search = {}
+}: {
+  pathname?: string;
+  search?: Record<string, unknown>;
+} = {}) => {
+  locationMock.pathname = pathname;
+  locationMock.search = search;
   vi.stubGlobal('fetch', createFetchStub());
 
   const queryClient = new QueryClient({
@@ -305,6 +318,27 @@ const renderPalette = () => {
   );
 };
 
+const openPalette = async () => {
+  fireEvent.keyDown(window, {
+    key: 'k',
+    ctrlKey: true
+  });
+
+  return screen.findByPlaceholderText('Search routes, profiles, sessions, cron jobs, skills, and files');
+};
+
+const selectPaletteCommand = async (query: string) => {
+  const paletteInput = await openPalette();
+  fireEvent.change(paletteInput, {
+    target: {
+      value: query
+    }
+  });
+  fireEvent.keyDown(paletteInput, {
+    key: 'Enter'
+  });
+};
+
 describe('AppCommandPalette', () => {
   const scrollIntoViewMock = vi.fn();
 
@@ -315,6 +349,8 @@ describe('AppCommandPalette', () => {
 
   afterEach(() => {
     cleanup();
+    locationMock.pathname = '/';
+    locationMock.search = {};
     navigateMock.mockReset();
     scrollIntoViewMock.mockReset();
     vi.unstubAllGlobals();
@@ -426,6 +462,128 @@ describe('AppCommandPalette', () => {
           sessionId: 'session-1'
         },
         to: '/sessions/$agentId/$sessionId'
+      });
+    });
+  });
+
+  it('discovers operational commands by obvious keywords', async () => {
+    renderPalette();
+
+    const paletteInput = await openPalette();
+
+    for (const [query, title] of [
+      ['failed cron', 'Show failed cron jobs'],
+      ['delivery', 'Show delivery failures'],
+      ['overdue', 'Show overdue cron jobs'],
+      ['paused', 'Show paused cron jobs'],
+      ['never observed', 'Show never-observed cron jobs'],
+      ['log errors', 'Show recent log errors'],
+      ['active sessions', 'Show active sessions'],
+      ['recent sessions', 'Show recent sessions'],
+      ['memory pressure', 'Show memory pressure'],
+      ['diagnostics', 'Open diagnostics']
+    ] as const) {
+      fireEvent.change(paletteInput, {
+        target: {
+          value: query
+        }
+      });
+
+      expect(await screen.findByText(title)).toBeTruthy();
+    }
+  });
+
+  it('navigates cron health commands with profile-scoped search params', async () => {
+    renderPalette({
+      pathname: '/cron',
+      search: {
+        profile: 'default'
+      }
+    });
+
+    await selectPaletteCommand('failed cron');
+
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledWith({
+        search: {
+          health: 'failed-last-run',
+          profile: 'default',
+          sort: 'attention'
+        },
+        to: '/cron'
+      });
+    });
+  });
+
+  it('uses simple profile-scoped navigation for unsupported focus commands', async () => {
+    for (const [query, to] of [
+      ['log errors', '/logs'],
+      ['active sessions', '/sessions'],
+      ['memory pressure', '/memory'],
+      ['diagnostics', '/']
+    ] as const) {
+      cleanup();
+      navigateMock.mockReset();
+      renderPalette({
+        pathname: '/',
+        search: {
+          profile: 'default'
+        }
+      });
+
+      await selectPaletteCommand(query);
+
+      await waitFor(() => {
+        expect(navigateMock).toHaveBeenCalledWith({
+          search: {
+            profile: 'default'
+          },
+          to
+        });
+      });
+    }
+  });
+
+  it('clears cron filters without dropping profile scope', async () => {
+    renderPalette({
+      pathname: '/cron',
+      search: {
+        health: 'overdue',
+        profile: 'default',
+        q: 'sync',
+        sort: 'next-run'
+      }
+    });
+
+    await selectPaletteCommand('clear cron filters');
+
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledWith({
+        search: {
+          profile: 'default'
+        },
+        to: '/cron'
+      });
+    });
+  });
+
+  it('clears session search without dropping profile scope', async () => {
+    renderPalette({
+      pathname: '/sessions',
+      search: {
+        profile: 'default',
+        q: 'debug'
+      }
+    });
+
+    await selectPaletteCommand('clear session filters');
+
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledWith({
+        search: {
+          profile: 'default'
+        },
+        to: '/sessions'
       });
     });
   });
