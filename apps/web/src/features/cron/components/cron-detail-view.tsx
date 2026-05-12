@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { AppBreadcrumbs } from '@/components/ui/app-breadcrumbs';
 import { CopyButton } from '@/components/ui/copy-button';
+import { CronDependencyList } from '@/features/cron/components/cron-dependency-list';
 import { getCronJobStateBadge, getCronOutputBadge } from '@/features/cron/lib/cron-job-presentation';
 import type { HermesCronJobDetail, HermesCronJobSummary } from '@hermes-console/runtime';
 
@@ -181,9 +182,17 @@ function OutputsSection({ detail }: { detail: HermesCronJobDetail }) {
   );
 }
 
-export function CronDetailView({ detail }: { detail: HermesCronJobDetail }) {
+export function CronDetailView({
+  detail,
+  jobs,
+  loadedAt
+}: {
+  detail: HermesCronJobDetail;
+  jobs: HermesCronJobSummary[];
+  loadedAt: string;
+}) {
   const { job } = detail;
-  const stateBadge = getCronJobStateBadge(job);
+  const stateBadge = getCronJobStateBadge({ job, now: loadedAt });
   const outputBadge = getCronOutputBadge(job);
   const repeatProgress =
     job.repeatCompleted == null
@@ -241,6 +250,8 @@ export function CronDetailView({ detail }: { detail: HermesCronJobDetail }) {
           </article>
         ))}
       </section>
+
+      <CronDependencyList currentJob={job} jobs={jobs} />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
         <section className="rounded-lg border border-border bg-surface/70 p-4">

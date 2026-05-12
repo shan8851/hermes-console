@@ -18,6 +18,7 @@ import {
 import { AgentList } from '@/features/inventory/components/agent-list';
 import { OverviewAttention } from '@/features/runtime-overview/components/overview-attention';
 import { OverviewConfiguration } from '@/features/runtime-overview/components/overview-configuration';
+import { OverviewCronHealth } from '@/features/runtime-overview/components/overview-cron-health';
 import { OverviewDiagnostics } from '@/features/runtime-overview/components/overview-diagnostics';
 import { OverviewGlance } from '@/features/runtime-overview/components/overview-glance';
 import { OverviewHero } from '@/features/runtime-overview/components/overview-hero';
@@ -209,6 +210,11 @@ export const HomePage = ({ profileScope }: { profileScope: ProfileScopeId }) => 
         ]}
       />
       <OverviewGlance isActivityScoped={!isAllProfilesScope(resolvedProfileScope)} overview={visibleOverview} />
+      <OverviewCronHealth
+        jobs={scopedCronJobs}
+        loadedAt={cron.data.meta.capturedAt ?? new Date().toISOString()}
+        profileScope={resolvedProfileScope}
+      />
       <OverviewRuntimeInstall overview={overview.data.data} />
       <OverviewAttention overview={visibleOverview} profileScope={resolvedProfileScope} />
       <OverviewDiagnostics

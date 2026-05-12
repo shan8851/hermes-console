@@ -27,7 +27,7 @@ function recentRunLabel(job: HermesCronJobSummary) {
   return `${job.recentFailureCount}/${job.recentObservedRunCount} recent failures`;
 }
 
-export function CronIndex({ jobs }: { jobs: HermesCronJobSummary[] }) {
+export function CronIndex({ jobs, loadedAt }: { jobs: HermesCronJobSummary[]; loadedAt: string }) {
   if (jobs.length === 0) {
     return (
       <section className="rounded-lg border border-border bg-surface/70 p-4">
@@ -45,13 +45,13 @@ export function CronIndex({ jobs }: { jobs: HermesCronJobSummary[] }) {
           Scheduled jobs
         </h3>
         <p className="mt-2 text-sm leading-6 text-fg-muted">
-          Jobs across all detected agents, with execution health separate from saved output.
+          Jobs in the current view, with execution health separate from saved output.
         </p>
       </div>
 
       <div className="space-y-3">
         {jobs.map((job) => {
-          const stateBadge = getCronJobStateBadge(job);
+          const stateBadge = getCronJobStateBadge({ job, now: loadedAt });
           const outputBadge = getCronOutputBadge(job);
 
           return (

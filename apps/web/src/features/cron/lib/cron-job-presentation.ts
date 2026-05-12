@@ -1,61 +1,43 @@
-import type { HermesCronJobSummary } from '@hermes-console/runtime';
+import { classifyCronHealth, type CronHealthState, type HermesCronJobSummary } from '@hermes-console/runtime';
 
 type CronJobBadge = {
   className: string;
   label: string;
 };
 
-export function getCronJobDisplayState(job: HermesCronJobSummary): string {
-  if (!job.enabled) {
-    return 'disabled';
-  }
+const healthBadgeLabels: Record<CronHealthState, string> = {
+  healthy: 'healthy',
+  'failed-last-run': 'failed',
+  'delivery-failed': 'delivery failed',
+  overdue: 'overdue',
+  paused: 'paused',
+  'never-observed': 'never observed',
+  disabled: 'disabled',
+  'quiet-expected': 'quiet expected',
+  unknown: 'unknown'
+};
 
-  if (job.state === 'paused' || job.pausedAt || job.pausedReason) {
-    return 'paused';
-  }
+const healthBadgeClasses: Record<CronHealthState, string> = {
+  healthy: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200',
+  'failed-last-run': 'border-red-500/30 bg-red-500/10 text-red-200',
+  'delivery-failed': 'border-red-500/30 bg-red-500/10 text-red-200',
+  overdue: 'border-amber-500/30 bg-amber-500/10 text-amber-200',
+  paused: 'border-amber-500/30 bg-amber-500/10 text-amber-200',
+  'never-observed': 'border-sky-500/30 bg-sky-500/10 text-sky-200',
+  disabled: 'border-border/80 bg-bg/40 text-fg-muted',
+  'quiet-expected': 'border-border/80 bg-bg/40 text-fg-muted',
+  unknown: 'border-border/80 bg-bg/40 text-fg-muted'
+};
 
-  return job.lastStatus ?? job.state ?? 'unknown';
-}
+export function getCronJobStateBadge({ job, now }: { job: HermesCronJobSummary; now: string }): CronJobBadge | null {
+  const health = classifyCronHealth(job, { now });
 
-export function getCronJobStateBadge(job: HermesCronJobSummary): CronJobBadge | null {
-  const displayState = getCronJobDisplayState(job);
-
-  if (displayState === 'paused') {
-    return {
-      label: 'paused',
-      className: 'border-amber-500/30 bg-amber-500/10 text-amber-200'
-    };
-  }
-
-  if (displayState === 'disabled') {
-    return {
-      label: 'disabled',
-      className: 'border-border/80 bg-bg/40 text-fg-muted'
-    };
-  }
-
-  if (job.attentionLevel === 'critical' || job.statusTone === 'error') {
-    return {
-      label: 'failing',
-      className: 'border-red-500/30 bg-red-500/10 text-red-200'
-    };
-  }
-
-  if (job.attentionLevel === 'warning' || job.statusTone === 'warning') {
-    return {
-      label: 'attention',
-      className: 'border-amber-500/30 bg-amber-500/10 text-amber-200'
-    };
-  }
-
-  if (displayState === 'running' || displayState === 'pending') {
-    return {
-      label: displayState,
-      className: 'border-amber-500/30 bg-amber-500/10 text-amber-200'
-    };
-  }
-
-  return null;
+  return health === 'healthy'
+    ? null
+    : {
+        label: healthBadgeLabels[health],
+        className: healthBadgeClasses[health]
+      };
 }
 
 export function getCronOutputBadge(job: HermesCronJobSummary): CronJobBadge | null {

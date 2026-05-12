@@ -3,6 +3,7 @@ export * from './attention/classify-issues.js';
 export * from './attention/compose-attention.js';
 export * from './attention/types.js';
 export * from './hermes-query.js';
+export * from './cron/cron-health.js';
 export * from './cron/types.js';
 export * from './inventory/discovery.js';
 export * from './inventory/types.js';

@@ -2,11 +2,18 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 
 import { QueryStatusCard } from '@/components/ui/query-status-card';
 import { CronBrowser } from '@/features/cron/components/cron-browser';
+import { normalizeCronFilterSearch, type CronFilterSearch } from '@/features/cron/lib/cron-filters';
 import { resolveProfileScope } from '@/features/profile-scope/profile-scope';
 import { apiQueryKeys, cronQueryOptions, inventoryQueryOptions } from '@/lib/api';
 import type { ProfileScopeId } from '@/features/profile-scope/profile-scope';
 
-export const CronPage = ({ profileScope }: { profileScope: ProfileScopeId }) => {
+export const CronPage = ({
+  cronSearch,
+  profileScope
+}: {
+  cronSearch: CronFilterSearch;
+  profileScope: ProfileScopeId;
+}) => {
   const query = useSuspenseQuery(cronQueryOptions());
   const inventory = useSuspenseQuery(inventoryQueryOptions());
   const resolvedProfileScope = resolveProfileScope({
@@ -18,6 +25,7 @@ export const CronPage = ({ profileScope }: { profileScope: ProfileScopeId }) => 
     <div className="space-y-6">
       <QueryStatusCard title="Cron data quality" status={query.data.meta.dataStatus} issues={query.data.issues} />
       <CronBrowser
+        cronSearch={normalizeCronFilterSearch(cronSearch as Record<string, unknown>)}
         jobs={query.data.data.jobs}
         loadedAt={query.data.meta.capturedAt ?? new Date().toISOString()}
         profileScope={resolvedProfileScope}
