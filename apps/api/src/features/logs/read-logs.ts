@@ -2,77 +2,76 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { resolveInventoryPathConfigFromEnv } from '@/features/inventory/resolve-path-config';
+import { readHermesSessionsResult } from '@/features/sessions/read-hermes-sessions';
 import { readTailTextFileResult } from '@/lib/read-tail-text-file-result';
 import { createMissingPathIssue, createUnreadablePathIssue } from '@/lib/query-issue-factories';
 import { createReadResult, type ReadResult } from '@/lib/read-result';
+import { createHermesLogEvent, parseHermesLogLine } from '@hermes-console/runtime';
 import type {
   HermesLogDetail,
+  HermesLogEvent,
+  HermesLogEventGroup,
+  HermesLogEventSummary,
   HermesLogFileSummary,
-  HermesLogLevel,
   HermesLogLine,
   HermesLogsIndex,
+  HermesLogSessionLink,
   HermesQueryIssue
 } from '@hermes-console/runtime';
 
 const LOG_SUMMARY_ANALYSIS_LINES = 200;
+const TOP_LOG_EVENTS_LIMIT = 25;
 
 const LOG_FILE_NAMES = ['agent.log', 'errors.log', 'gateway.log'] as const;
 
-const LOG_LEVEL_PATTERN = /\b(ERROR|WARN(?:ING)?|INFO|DEBUG)\b/i;
-const LOG_TIMESTAMP_PATTERN = /^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:,\d{3})?)/;
+type AnalyzedLogFile = {
+  summary: HermesLogFileSummary;
+  events: HermesLogEvent[];
+};
 
 function clampRequestedLines(value: number) {
   return Math.min(Math.max(1, value), 500);
-}
-
-function resolveLogLevel(text: string): HermesLogLevel {
-  const match = text.match(LOG_LEVEL_PATTERN);
-  const level = match?.[1]?.toLowerCase();
-
-  if (level === 'error') {
-    return 'error';
-  }
-
-  if (level === 'warn' || level === 'warning') {
-    return 'warning';
-  }
-
-  if (level === 'info') {
-    return 'info';
-  }
-
-  if (level === 'debug') {
-    return 'debug';
-  }
-
-  return 'other';
-}
-
-function parseLogTimestamp(text: string) {
-  const rawTimestamp = text.match(LOG_TIMESTAMP_PATTERN)?.[1];
-
-  if (!rawTimestamp) {
-    return null;
-  }
-
-  const parsed = new Date(rawTimestamp.replace(' ', 'T').replace(',', '.'));
-  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 }
 
 function parseLogLines(rawContent: string): HermesLogLine[] {
   return rawContent
     .split(/\r?\n/)
     .filter((line) => line.trim().length > 0)
-    .map((line, index) => ({
-      id: `${index}:${line.slice(0, 24)}`,
-      lineNumber: index + 1,
-      timestamp: parseLogTimestamp(line),
-      level: resolveLogLevel(line),
-      text: line
-    }));
+    .map((line, index) => {
+      const parsedLine = parseHermesLogLine(line);
+
+      return {
+        id: `${index}:${line.slice(0, 24)}`,
+        lineNumber: index + 1,
+        timestamp: parsedLine.timestamp,
+        level: parsedLine.level,
+        text: line
+      };
+    });
 }
 
-function buildLogSummary(logPath: string): HermesLogFileSummary | null {
+function createEventsForLines({
+  lines,
+  logId,
+  logName
+}: {
+  lines: string[];
+  logId: string;
+  logName: string;
+}): HermesLogEvent[] {
+  return lines.flatMap((line, index) => {
+    const event = createHermesLogEvent({
+      lineNumber: index + 1,
+      logId,
+      logName,
+      rawLine: line
+    });
+
+    return event ? [event] : [];
+  });
+}
+
+function buildLogAnalysis(logPath: string): AnalyzedLogFile | null {
   const stat = fs.statSync(logPath);
   const tail = readTailTextFileResult(logPath, LOG_SUMMARY_ANALYSIS_LINES);
 
@@ -81,18 +80,154 @@ function buildLogSummary(logPath: string): HermesLogFileSummary | null {
   }
 
   const lines = parseLogLines(tail.content);
+  const rawLines = tail.content.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  const logId = path.basename(logPath);
+  const logName = path.basename(logPath);
 
   return {
-    id: path.basename(logPath),
-    name: path.basename(logPath),
-    path: logPath,
-    fileSize: stat.size,
-    lastModifiedMs: stat.mtimeMs,
-    analyzedLineCount: lines.length,
-    errorLineCount: lines.filter((line) => line.level === 'error').length,
-    warningLineCount: lines.filter((line) => line.level === 'warning').length,
-    infoLineCount: lines.filter((line) => line.level === 'info').length,
-    debugLineCount: lines.filter((line) => line.level === 'debug').length
+    summary: {
+      id: logId,
+      name: logName,
+      path: logPath,
+      fileSize: stat.size,
+      lastModifiedMs: stat.mtimeMs,
+      analyzedLineCount: lines.length,
+      errorLineCount: lines.filter((line) => line.level === 'error').length,
+      warningLineCount: lines.filter((line) => line.level === 'warning').length,
+      infoLineCount: lines.filter((line) => line.level === 'info').length,
+      debugLineCount: lines.filter((line) => line.level === 'debug').length
+    },
+    events: createEventsForLines({
+      lines: rawLines,
+      logId,
+      logName
+    })
+  };
+}
+
+function compareEventsByRecency(left: HermesLogEvent, right: HermesLogEvent): number {
+  const leftTime = left.timestamp ? new Date(left.timestamp).getTime() : 0;
+  const rightTime = right.timestamp ? new Date(right.timestamp).getTime() : 0;
+
+  if (leftTime !== rightTime) {
+    return rightTime - leftTime;
+  }
+
+  if (left.logName !== right.logName) {
+    return left.logName.localeCompare(right.logName);
+  }
+
+  return right.lineNumber - left.lineNumber;
+}
+
+function compareGroupRecency(left: HermesLogEventGroup, right: HermesLogEventGroup): number {
+  const leftTime = left.latestTimestamp ? new Date(left.latestTimestamp).getTime() : 0;
+  const rightTime = right.latestTimestamp ? new Date(right.latestTimestamp).getTime() : 0;
+
+  if (leftTime !== rightTime) {
+    return rightTime - leftTime;
+  }
+
+  return right.errorCount + right.warningCount - (left.errorCount + left.warningCount);
+}
+
+function createEventGroups(
+  events: HermesLogEvent[],
+  resolveGroup: (event: HermesLogEvent) => string
+): HermesLogEventGroup[] {
+  const groups = events.reduce((groupMap, event) => {
+    const label = resolveGroup(event);
+    const current = groupMap.get(label) ?? {
+      id: label,
+      label,
+      errorCount: 0,
+      warningCount: 0,
+      latestTimestamp: null
+    };
+    const eventTime = event.timestamp ? new Date(event.timestamp).getTime() : 0;
+    const latestTime = current.latestTimestamp ? new Date(current.latestTimestamp).getTime() : 0;
+
+    groupMap.set(label, {
+      ...current,
+      errorCount: current.errorCount + (event.level === 'error' ? 1 : 0),
+      warningCount: current.warningCount + (event.level === 'warning' ? 1 : 0),
+      latestTimestamp: eventTime > latestTime ? event.timestamp : current.latestTimestamp
+    });
+
+    return groupMap;
+  }, new Map<string, HermesLogEventGroup>());
+
+  return [...groups.values()].sort(compareGroupRecency);
+}
+
+function createEmptyLogEventSummary(): HermesLogEventSummary {
+  return {
+    analyzedLineCount: 0,
+    recentErrorCount: 0,
+    recentWarningCount: 0,
+    topEvents: [],
+    componentGroups: [],
+    fileGroups: []
+  };
+}
+
+function resolveSessionLinks(events: HermesLogEvent[]): Map<string, HermesLogSessionLink> {
+  const eventSessionIds = [...new Set(events.flatMap((event) => (event.sessionId ? [event.sessionId] : [])))];
+
+  if (eventSessionIds.length === 0) {
+    return new Map();
+  }
+
+  const sessions = readHermesSessionsResult().data.sessions;
+  const sessionIds = new Set(eventSessionIds);
+  const linksBySessionId = sessions
+    .filter((session) => sessionIds.has(session.sessionId))
+    .reduce((linkMap, session) => {
+      const current = linkMap.get(session.sessionId) ?? [];
+
+      linkMap.set(session.sessionId, [
+        ...current,
+        {
+          agentId: session.agentId,
+          sessionId: session.sessionId,
+          href: `/sessions/${encodeURIComponent(session.agentId)}/${encodeURIComponent(session.sessionId)}`
+        }
+      ]);
+
+      return linkMap;
+    }, new Map<string, HermesLogSessionLink[]>());
+
+  return [...linksBySessionId.entries()].reduce((linkMap, [sessionId, links]) => {
+    if (links.length === 1 && links[0]) {
+      linkMap.set(sessionId, links[0]);
+    }
+
+    return linkMap;
+  }, new Map<string, HermesLogSessionLink>());
+}
+
+function createLogEventSummary({
+  analyzedLineCount,
+  events
+}: {
+  analyzedLineCount: number;
+  events: HermesLogEvent[];
+}): HermesLogEventSummary {
+  const sortedEvents = [...events].sort(compareEventsByRecency);
+  const topEvents = sortedEvents.slice(0, TOP_LOG_EVENTS_LIMIT);
+  const sessionLinks = resolveSessionLinks(topEvents);
+  const linkedTopEvents = topEvents.map((event) => ({
+    ...event,
+    sessionLink: event.sessionId ? (sessionLinks.get(event.sessionId) ?? null) : null
+  }));
+
+  return {
+    analyzedLineCount,
+    recentErrorCount: events.filter((event) => event.level === 'error').length,
+    recentWarningCount: events.filter((event) => event.level === 'warning').length,
+    topEvents: linkedTopEvents,
+    componentGroups: createEventGroups(events, (event) => event.component ?? 'unknown'),
+    fileGroups: createEventGroups(events, (event) => event.logName)
   };
 }
 
@@ -129,7 +264,8 @@ export function readHermesLogsResult(): ReadResult<HermesLogsIndex> {
 
     return createReadResult({
       data: {
-        logs: []
+        logs: [],
+        eventSummary: createEmptyLogEventSummary()
       },
       issues
     });
@@ -155,9 +291,9 @@ export function readHermesLogsResult(): ReadResult<HermesLogsIndex> {
 
   const logs = logPaths.flatMap((logPath) => {
     try {
-      const summary = buildLogSummary(logPath);
+      const analysis = buildLogAnalysis(logPath);
 
-      if (!summary) {
+      if (!analysis) {
         issues.push(
           createUnreadablePathIssue({
             id: `logs-summary-unreadable:${logPath}`,
@@ -170,7 +306,7 @@ export function readHermesLogsResult(): ReadResult<HermesLogsIndex> {
         return [];
       }
 
-      return [summary];
+      return [analysis];
     } catch (error) {
       issues.push(
         createUnreadablePathIssue({
@@ -187,7 +323,11 @@ export function readHermesLogsResult(): ReadResult<HermesLogsIndex> {
 
   return createReadResult({
     data: {
-      logs
+      logs: logs.map((log) => log.summary),
+      eventSummary: createLogEventSummary({
+        analyzedLineCount: logs.reduce((sum, log) => sum + log.summary.analyzedLineCount, 0),
+        events: logs.flatMap((log) => log.events)
+      })
     },
     issues
   });
