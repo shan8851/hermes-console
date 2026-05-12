@@ -9,11 +9,18 @@ import {
   type CommandResult
 } from '@/components/app-shell/app-command-palette-utils';
 import { EmptyState } from '@/components/ui/empty-state';
+import {
+  clearCronFilters,
+  createCronHealthSearch,
+  hasActiveCronFilters,
+  type CronFilterSearch
+} from '@/features/cron/lib/cron-filters';
 import { useWindowKeydown } from '@/hooks/useWindowKeydown';
 import {
   ALL_PROFILES_SCOPE,
   createProfileScopeOptions,
   createProfileSearch,
+  isAllProfilesScope,
   readProfileScopeFromSearch,
   resolveProfileScope,
   routeSupportsProfileScope,
@@ -27,6 +34,48 @@ import {
   skillsQueryOptions
 } from '@/lib/api';
 import { appRoutes } from '@/lib/navigation';
+import type { CronHealthState } from '@hermes-console/runtime';
+
+const cronHealthCommandOptions: Array<{
+  health: CronHealthState;
+  id: string;
+  keywords: string[];
+  title: string;
+}> = [
+  {
+    health: 'failed-last-run',
+    id: 'failed-cron',
+    keywords: ['failed cron jobs', 'cron failure', 'last run failed', 'errors'],
+    title: 'Show failed cron jobs'
+  },
+  {
+    health: 'delivery-failed',
+    id: 'delivery-failures',
+    keywords: ['delivery failures', 'delivery failed', 'notification failures', 'cron deliver'],
+    title: 'Show delivery failures'
+  },
+  {
+    health: 'overdue',
+    id: 'overdue-cron',
+    keywords: ['overdue cron jobs', 'late jobs', 'missed schedule', 'needs attention'],
+    title: 'Show overdue cron jobs'
+  },
+  {
+    health: 'paused',
+    id: 'paused-cron',
+    keywords: ['paused cron jobs', 'paused jobs', 'disabled schedule', 'stopped jobs'],
+    title: 'Show paused cron jobs'
+  },
+  {
+    health: 'never-observed',
+    id: 'never-observed-cron',
+    keywords: ['never observed cron jobs', 'no runs', 'unobserved jobs', 'new jobs'],
+    title: 'Show never-observed cron jobs'
+  }
+];
+
+const readSearchString = ({ key, search }: { key: string; search: Record<string, unknown> }): string | undefined =>
+  typeof search[key] === 'string' ? search[key] : undefined;
 
 export function AppCommandPalette({
   fallbackProfileScope,
@@ -179,6 +228,21 @@ export function AppCommandPalette({
         })
       });
     };
+    const createSearchForProfileScopedRoute = ({ pathname }: { pathname: string }): Record<string, unknown> =>
+      routeSupportsProfileScope(pathname)
+        ? createProfileSearch({
+            scope: currentProfileScope
+          })
+        : {};
+    const navigateToProfileScopedRoute = ({ pathname }: { pathname: string }) => {
+      onClose();
+      void router.navigate({
+        to: pathname,
+        search: createSearchForProfileScopedRoute({
+          pathname
+        })
+      });
+    };
 
     const routeResults: CommandResult[] = appRoutes.map((route) => ({
       id: `route:${route.href}`,
@@ -224,6 +288,108 @@ export function AppCommandPalette({
       ],
       onSelect: () => navigateWithProfileScope({ scope: option.value })
     }));
+
+    const currentSearch = location.search as Record<string, unknown>;
+    const profileForCronHealthSearch = isAllProfilesScope(currentProfileScope) ? undefined : currentProfileScope;
+    const cronHealthResults: CommandResult[] = cronHealthCommandOptions.map((option) => ({
+      id: `operation:cron:${option.id}`,
+      group: 'Operations',
+      title: option.title,
+      subtitle: 'Filter scheduled jobs by operational health',
+      keywords: ['cron health', 'scheduled jobs', 'operator shortcut', ...option.keywords],
+      onSelect: () => {
+        onClose();
+        void router.navigate({
+          to: '/cron',
+          search: createCronHealthSearch({
+            health: option.health,
+            ...(profileForCronHealthSearch ? { profile: profileForCronHealthSearch } : {})
+          })
+        });
+      }
+    }));
+    const clearFilterResults: CommandResult[] =
+      location.pathname === '/cron' && hasActiveCronFilters(currentSearch as CronFilterSearch)
+        ? [
+            {
+              id: 'operation:clear-filters:cron',
+              group: 'Operations',
+              title: 'Clear cron filters',
+              subtitle: 'Reset cron search and filters while keeping profile scope',
+              keywords: ['clear filters', 'reset filters', 'clear cron filters', 'reset cron search'],
+              onSelect: () => {
+                onClose();
+                void router.navigate({
+                  to: '/cron',
+                  search: clearCronFilters(currentSearch as CronFilterSearch)
+                });
+              }
+            }
+          ]
+        : location.pathname === '/sessions' && readSearchString({ key: 'q', search: currentSearch })?.trim()
+          ? [
+              {
+                id: 'operation:clear-filters:sessions',
+                group: 'Operations',
+                title: 'Clear session filters',
+                subtitle: 'Reset session search while keeping profile scope',
+                keywords: ['clear filters', 'reset filters', 'clear session search', 'reset sessions'],
+                onSelect: () => {
+                  onClose();
+                  void router.navigate({
+                    to: '/sessions',
+                    search: createProfileSearch({
+                      scope: currentProfileScope
+                    })
+                  });
+                }
+              }
+            ]
+          : [];
+    const operationResults: CommandResult[] = [
+      ...cronHealthResults,
+      {
+        id: 'operation:logs:errors',
+        group: 'Operations',
+        title: 'Show recent log errors',
+        subtitle: 'Open runtime logs for recent warning and error events',
+        keywords: ['recent log errors', 'logs errors warnings', 'runtime errors', 'event timeline'],
+        onSelect: () => navigateToProfileScopedRoute({ pathname: '/logs' })
+      },
+      {
+        id: 'operation:sessions:active',
+        group: 'Operations',
+        title: 'Show active sessions',
+        subtitle: 'Open session history in the current profile scope',
+        keywords: ['active sessions', 'running sessions', 'still active', 'session history'],
+        onSelect: () => navigateToProfileScopedRoute({ pathname: '/sessions' })
+      },
+      {
+        id: 'operation:sessions:recent',
+        group: 'Operations',
+        title: 'Show recent sessions',
+        subtitle: 'Open recent session history in the current profile scope',
+        keywords: ['recent sessions', 'latest sessions', 'session history', 'activity history'],
+        onSelect: () => navigateToProfileScopedRoute({ pathname: '/sessions' })
+      },
+      {
+        id: 'operation:memory:pressure',
+        group: 'Operations',
+        title: 'Show memory pressure',
+        subtitle: 'Open saved memory and pressure badges',
+        keywords: ['memory pressure', 'memory limit', 'memory near limit', 'saved context'],
+        onSelect: () => navigateToProfileScopedRoute({ pathname: '/memory' })
+      },
+      {
+        id: 'operation:diagnostics:open',
+        group: 'Operations',
+        title: 'Open diagnostics',
+        subtitle: 'Open Overview for Hermes status and doctor diagnostics',
+        keywords: ['diagnostics', 'doctor', 'hermes status', 'overview diagnostics', 'health'],
+        onSelect: () => navigateToProfileScopedRoute({ pathname: '/' })
+      },
+      ...clearFilterResults
+    ];
 
     const sessionResults: CommandResult[] =
       sessionsQuery.data?.data.sessions.slice(0, deferredQuery ? undefined : 8).map((session) => ({
@@ -312,7 +478,15 @@ export function AppCommandPalette({
       })) ?? [];
 
     return filterCommandResults(
-      [...routeResults, ...profileResults, ...sessionResults, ...cronResults, ...skillResults, ...fileResults],
+      [
+        ...routeResults,
+        ...profileResults,
+        ...operationResults,
+        ...sessionResults,
+        ...cronResults,
+        ...skillResults,
+        ...fileResults
+      ],
       deferredQuery
     );
   }, [

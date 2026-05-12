@@ -1,4 +1,4 @@
-export type CommandResultGroup = 'Routes' | 'Profiles' | 'Sessions' | 'Cron' | 'Skills' | 'Files';
+export type CommandResultGroup = 'Routes' | 'Profiles' | 'Operations' | 'Sessions' | 'Cron' | 'Skills' | 'Files';
 
 export type CommandResult = {
   id: string;
@@ -12,10 +12,11 @@ export type CommandResult = {
 const groupPriority: Record<CommandResultGroup, number> = {
   Routes: 0,
   Profiles: 1,
-  Sessions: 2,
-  Cron: 3,
-  Skills: 4,
-  Files: 5
+  Operations: 2,
+  Sessions: 3,
+  Cron: 4,
+  Skills: 5,
+  Files: 6
 };
 
 const normalizeTerms = (query: string): string[] =>
