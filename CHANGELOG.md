@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.6.0 - 2026-05-12
+
 - Added read-only session detail pages with transcript timelines, token/cost breakdowns, lineage metadata, and direct links from session search/list results.
 - Added the Cron Reliability Console with health classification, URL-backed filters/sorts, dependency context, and Overview cron health links.
 - Added log-derived warning/error events with bounded summaries, grouped event context, raw-line expansion, and best-effort links back to session detail pages.
