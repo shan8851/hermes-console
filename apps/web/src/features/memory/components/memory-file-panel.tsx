@@ -39,6 +39,10 @@ function usageBarClass(level: MemoryFileSummary['pressureLevel']) {
   return 'bg-emerald-400';
 }
 
+function formatModifiedTime(value: number | null) {
+  return value == null ? 'not observed' : new Date(value).toLocaleString();
+}
+
 export function MemoryFilePanel({
   file,
   limitSource,
@@ -72,8 +76,8 @@ export function MemoryFilePanel({
           </div>
           {file.exists ? (
             <p className="mt-2 text-sm leading-6 text-fg-muted">
-              Hermes stores this as one markdown file; the blocks below are parsed from saved sections so the file stays
-              scannable.
+              Local/private raw memory. Hermes stores this as one markdown file; the blocks below are parsed from saved
+              sections so the file stays scannable.
             </p>
           ) : null}
         </div>
@@ -98,8 +102,8 @@ export function MemoryFilePanel({
           <p className="mt-2 text-sm text-fg-strong">{formatLimitSource(limitSource)}</p>
         </div>
         <div className="rounded-md border border-border/70 bg-bg/40 p-3">
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-faint">pressure</p>
-          <p className="mt-2 text-sm text-fg-strong">{file.pressureLevel.replaceAll('_', ' ')}</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-faint">last modified</p>
+          <p className="mt-2 text-sm text-fg-strong">{formatModifiedTime(file.lastModifiedMs)}</p>
         </div>
       </div>
 

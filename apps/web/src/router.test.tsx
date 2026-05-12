@@ -87,14 +87,41 @@ const nestedSkillLinkedFile = {
   absolutePath: '/tmp/hermes/skills/workspace/demo-skill/references/guide.md'
 };
 
+const skillReadiness = {
+  status: 'available' as const,
+  reasons: [],
+  platform: {
+    currentPlatform: 'linux',
+    platforms: [],
+    status: 'compatible' as const
+  },
+  requirements: [],
+  linkedFileCount: 1,
+  linkedFilesByKind: {
+    asset: 0,
+    reference: 1,
+    script: 0,
+    template: 0
+  }
+};
+
 const skillSummary = {
   id: 'demo-skill',
   slug: 'demo-skill',
   name: 'Demo Skill',
   description: 'Demo description',
   category: 'workspace',
+  tags: [],
+  profileId: 'default',
+  source: {
+    agentId: 'default',
+    kind: 'root' as const,
+    label: 'Default',
+    rootPath: '/tmp/hermes/skills'
+  },
   skillPath: '/tmp/hermes/skills/demo-skill/SKILL.md',
   parseStatus: 'valid' as const,
+  readiness: skillReadiness,
   linkedFiles: [skillLinkedFile]
 };
 
@@ -104,8 +131,17 @@ const nestedSkillSummary = {
   name: 'Nested Demo Skill',
   description: 'Nested demo description',
   category: 'workspace',
+  tags: [],
+  profileId: 'default',
+  source: {
+    agentId: 'default',
+    kind: 'root' as const,
+    label: 'Default',
+    rootPath: '/tmp/hermes/skills'
+  },
   skillPath: '/tmp/hermes/skills/workspace/demo-skill/SKILL.md',
   parseStatus: 'valid' as const,
+  readiness: skillReadiness,
   linkedFiles: [nestedSkillLinkedFile]
 };
 

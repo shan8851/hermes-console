@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router';
 
 import { compareSkillCategories } from '@hermes-console/runtime';
 import { SkillParseBadge } from '@/features/skills/components/skill-parse-badge';
+import { SkillReadinessBadge } from '@/features/skills/components/skill-readiness-badge';
 import type { SkillSummary } from '@hermes-console/runtime';
 
 export function SkillsIndex({ skills }: { skills: SkillSummary[] }) {
@@ -51,12 +52,21 @@ export function SkillsIndex({ skills }: { skills: SkillSummary[] }) {
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="text-sm font-medium text-fg-strong">{skill.name}</p>
+                      <SkillReadinessBadge status={skill.readiness.status} />
                       <SkillParseBadge status={skill.parseStatus} />
                     </div>
                     <p className="mt-2 text-sm leading-6 text-fg-muted">{skill.description}</p>
+                    <div className="mt-3 flex flex-wrap gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-fg-faint">
+                      <span>{skill.source.kind}</span>
+                      <span>{skill.source.label}</span>
+                      {skill.tags.slice(0, 4).map((tag) => (
+                        <span key={tag}>{tag}</span>
+                      ))}
+                    </div>
                   </div>
                   <div className="text-right text-xs text-fg-muted">
                     <p>{skill.linkedFiles.length} linked</p>
+                    <p className="mt-1">{skill.readiness.requirements.length} setup refs</p>
                   </div>
                 </div>
               </Link>

@@ -1,16 +1,12 @@
 import path from 'node:path';
+import { parse } from 'yaml';
 
 import { nodeSkillsFileSystem } from '@/features/skills/node-skills-file-system';
-import { readSkillsIndex } from '@/features/skills/read-skills-index';
+import { readHermesSkillsResult } from '@/features/skills/read-skills';
 import type { SkillDocumentDetail, SkillLinkedFileContent, SkillSummary } from '@hermes-console/runtime';
-import { resolveInventoryPathConfigFromEnv } from '@/features/inventory/resolve-path-config';
 
 function normalizeText(value: string) {
   return value.replace(/\r\n/g, '\n');
-}
-
-function stripQuotes(value: string) {
-  return value.replace(/^['"]|['"]$/g, '').trim();
 }
 
 function parseFrontmatter(rawContent: string) {
@@ -18,7 +14,7 @@ function parseFrontmatter(rawContent: string) {
 
   if (!normalized.startsWith('---\n')) {
     return {
-      frontmatter: {} as Record<string, string>,
+      frontmatter: {} as Record<string, unknown>,
       body: normalized.trim()
     };
   }
@@ -27,29 +23,22 @@ function parseFrontmatter(rawContent: string) {
 
   if (closingIndex === -1) {
     return {
-      frontmatter: {} as Record<string, string>,
+      frontmatter: {} as Record<string, unknown>,
       body: normalized.trim()
     };
   }
 
-  const frontmatter: Record<string, string> = {};
-
-  for (const line of normalized.slice(4, closingIndex).split('\n')) {
-    const match = line.match(/^([A-Za-z0-9_-]+):\s*(.+)$/);
-
-    if (!match) {
-      continue;
+  const parsedFrontmatter = (() => {
+    try {
+      return parse(normalized.slice(4, closingIndex)) as unknown;
+    } catch {
+      return null;
     }
-
-    const frontmatterKey = match[1];
-    const frontmatterValue = match[2];
-
-    if (!frontmatterKey || frontmatterValue == null) {
-      continue;
-    }
-
-    frontmatter[frontmatterKey] = stripQuotes(frontmatterValue);
-  }
+  })();
+  const frontmatter =
+    parsedFrontmatter && typeof parsedFrontmatter === 'object' && !Array.isArray(parsedFrontmatter)
+      ? (parsedFrontmatter as Record<string, unknown>)
+      : {};
 
   return {
     frontmatter,
@@ -58,26 +47,19 @@ function parseFrontmatter(rawContent: string) {
 }
 
 function readSkillSummary(skillId: string): SkillSummary | null {
-  const paths = resolveInventoryPathConfigFromEnv();
-  const skillsRoot = path.join(paths.hermesRoot.path, 'skills');
-  const index = readSkillsIndex({
-    skillsRoot,
-    fileSystem: nodeSkillsFileSystem
-  });
+  const index = readHermesSkillsResult().data;
 
   return index.skills.find((skill) => skill.id === skillId) ?? null;
 }
 
 export function readSkillDocumentDetail({ skillId }: { skillId: string }): SkillDocumentDetail | null {
-  const paths = resolveInventoryPathConfigFromEnv();
-  const skillsRoot = path.join(paths.hermesRoot.path, 'skills');
   const summary = readSkillSummary(skillId);
 
   if (!summary) {
     return null;
   }
 
-  const skillAbsolutePath = path.join(skillsRoot, summary.skillPath);
+  const skillAbsolutePath = path.join(summary.source.rootPath, summary.skillPath);
   const rawContent = nodeSkillsFileSystem.readTextFile(skillAbsolutePath) ?? '';
   const parsed = parseFrontmatter(rawContent);
 
